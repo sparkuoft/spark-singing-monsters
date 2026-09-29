@@ -24,7 +24,11 @@ void controller_init() {
 }
 
 void controller_loop() {
+  // Poll inputs manager
 
+  // Dequeue events and handle them
+
+  // Update timeouts
 }
 
 void controller_handle_mode_changed(Mode new_mode) {
