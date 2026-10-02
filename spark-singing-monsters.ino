@@ -1,11 +1,10 @@
 #include <Arduino.h>
+#include "events.h"
 #include "tasks.h"
 
 void setup() {
   Serial.begin(115200);
-  // Need to create tasks and inter-task communication
-  // xQueueCreate() for events
-  // xStreamBufferCreate() for audio??? aynaz/joshua
+  event_queue_init();
   tasks_init();
   Serial.println("setup done");
 }
@@ -19,3 +18,5 @@ void loop() {
 // Channel or smth similar for abstracting audio passing between tassks
 // Buttons as sample task, should be similar formatting
 // Considering how non time blocking tasks will handle
+// I2S not shared, but config?
+// List all hardware functions (need to ask other subteams)

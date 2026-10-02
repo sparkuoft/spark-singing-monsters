@@ -2,24 +2,21 @@
 #include "controller.h"
 // Include the other random files for subteam tasks
 
+static EventGroupHandle_t init_group;
+
 typedef struct {
   // Inputs to pass into pinned to core task creation
-} HardwareTask;
+} Task;
 
-static const HardwareTask hardware_tasks[] = {
+static const Task tasks[] = {
   // List all subteam based tasks, not the game thing
 };
 
-static void hardware_task(void *arg) {
-  const HardwareTask *t = (const HardwareTask *)arg;
+#define NUM_TASKS (sizeof(tasks) / sizeof(tasks[0]))
 
-  while (1) {
+static void task_entry(void *arg) { // Gotta redo this, idk
+  const Task *t = (const Task*)arg;
 
-  }
-}
-
-static void game_task(void *arg) {
-  (void)arg; // Compiler shut up
   controller_init();
   while (1) {
     controller_loop();
@@ -27,10 +24,10 @@ static void game_task(void *arg) {
   }
 }
 
-void tasks_init() {
-  for () {
-    // Hardware tasks
+void tasks_init() { // Also broken, redo
+  init_group = xEventGroupCreate();
+
+  for (int i = 0; i < NUM_TASKS; i++) {
+    xTaskCreatePinnedToCore(task_entry, ...);
   }
-  // Game task
-  // xTaskCreatePinnedToCore();
 }
