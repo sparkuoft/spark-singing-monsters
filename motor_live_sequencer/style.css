@@ -1,0 +1,665 @@
+/* ============================================================
+   GENERAL
+   ============================================================ */
+
+* {
+    box-sizing: border-box;
+}
+
+
+body {
+    margin: 0;
+    padding: 30px;
+
+    font-family: Arial, sans-serif;
+
+    background-color: #f5f5f5;
+    color: #222;
+}
+
+
+.sequencer {
+    max-width: 1200px;
+    margin: auto;
+}
+
+
+h1 {
+    margin-bottom: 25px;
+}
+
+
+h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+
+    font-size: 18px;
+}
+
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+
+.settings {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 20px;
+
+    margin-bottom: 20px;
+}
+
+
+.settings label,
+.editor-fields label {
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
+
+    font-weight: bold;
+}
+
+
+.settings input,
+.settings select,
+.editor-fields input,
+.editor-fields select {
+    padding: 8px;
+
+    font-size: 14px;
+}
+
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+
+.new-note-panel,
+.note-editor {
+    margin-bottom: 20px;
+
+    padding: 15px;
+
+    border: 1px solid #bbb;
+
+    background-color: white;
+}
+
+
+.editor-fields {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 15px;
+}
+
+
+.editor-buttons {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-top: 15px;
+}
+
+
+.editor-buttons button {
+    padding: 8px 14px;
+
+    cursor: pointer;
+}
+
+
+.delete-button {
+    border: 1px solid #a33;
+}
+
+
+.help-text,
+.editor-message,
+.status-message {
+    margin-top: 10px;
+
+    font-size: 14px;
+}
+
+
+.editor-message,
+.status-message {
+    min-height: 18px;
+}
+
+
+.hidden {
+    display: none;
+}
+
+
+/* ============================================================
+   TRANSPORT
+   ============================================================ */
+
+.transport {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-bottom: 25px;
+}
+
+
+.transport button {
+    padding: 8px 14px;
+
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+
+#timeDisplay {
+    margin-left: 10px;
+
+    font-family: monospace;
+}
+
+
+/* ============================================================
+   TIMELINE
+   ============================================================ */
+
+.timeline-section {
+    overflow-x: auto;
+
+    width: fit-content;
+    max-width: 100%;
+
+    border: 1px solid #bbb;
+
+    background-color: white;
+}
+
+
+#timeline {
+    position: relative;
+
+    width: max-content;
+}
+
+/* ============================================================
+   PLAYHEAD
+   ============================================================ */
+
+#playhead {
+    position: absolute;
+
+    top: 0;
+
+    /*
+       Motor labels/ruler labels are 100 px wide.
+       The playhead begins at the start of the actual timeline.
+    */
+    left: 100px;
+
+    width: 2px;
+    height: 100%;
+
+    background-color: #222;
+
+    z-index: 10;
+
+    pointer-events: none;
+
+    display: none;
+}
+
+/* ============================================================
+   TIME RULER
+   ============================================================ */
+
+.timeline-ruler {
+    display: flex;
+
+    height: 45px;
+
+    border-bottom: 2px solid #888;
+}
+
+
+.ruler-label-space {
+    width: 100px;
+
+    flex-shrink: 0;
+
+    background-color: #eee;
+
+    border-right: 1px solid #aaa;
+}
+
+
+#rulerTrack {
+    position: relative;
+
+    height: 45px;
+
+    flex-shrink: 0;
+
+    background-color: white;
+}
+
+
+/* Every vertical ruler marker */
+.ruler-marker {
+    position: absolute;
+
+    bottom: 0;
+
+    width: 1px;
+
+    background-color: #aaa;
+}
+
+
+/* Small snap-interval ticks */
+.minor-marker {
+    height: 8px;
+}
+
+
+/* Major 0.5-second ticks */
+.major-marker {
+    height: 18px;
+
+    background-color: #555;
+}
+
+
+/* Time text created inside each major marker */
+.major-marker span {
+    position: absolute;
+
+    bottom: 20px;
+    left: 4px;
+
+    white-space: nowrap;
+
+    font-size: 11px;
+
+    font-weight: normal;
+
+    color: #555;
+}
+
+
+/* ============================================================
+   MOTOR LANES
+   ============================================================ */
+
+.motor-lane {
+    display: flex;
+
+    min-height: 70px;
+
+    border-bottom: 1px solid #ccc;
+}
+
+
+.motor-label {
+    width: 100px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+
+    padding: 10px;
+
+    font-weight: bold;
+
+    background-color: #ddd;
+
+    border-right: 1px solid #aaa;
+}
+
+
+.motor-track {
+    position: relative;
+
+    flex-shrink: 0;
+
+    height: 70px;
+
+    background-color: white;
+
+    background-image:
+        linear-gradient(
+            to right,
+            #eeeeee 1px,
+            transparent 1px
+        );
+
+    background-size: 10px 100%;
+
+    cursor: crosshair;
+}
+
+
+/* ============================================================
+   NOTE BLOCKS
+   ============================================================ */
+
+.note-block {
+    position: absolute;
+
+    top: 10px;
+
+    height: 50px;
+
+    min-width: 2px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #333;
+    border-radius: 4px;
+
+    background-color: #ddd;
+
+    font-weight: bold;
+
+    cursor: grab;
+
+    overflow: hidden;
+
+    user-select: none;
+
+    touch-action: none;
+}
+
+
+.note-block:active {
+    cursor: grabbing;
+}
+
+
+.note-label {
+    pointer-events: none;
+
+    padding-left: 5px;
+    padding-right: 10px;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   SELECTED NOTE
+   ============================================================ */
+
+.selected-note {
+    outline: 3px solid #555;
+
+    z-index: 2;
+}
+
+
+/* ============================================================
+   RESIZE HANDLE
+   ============================================================ */
+
+.resize-handle {
+    position: absolute;
+
+    top: 0;
+    right: 0;
+
+    width: 8px;
+    height: 100%;
+
+    border-left: 1px solid #777;
+
+    background-color: #bbb;
+
+    cursor: ew-resize;
+
+    touch-action: none;
+}
+
+/* ============================================================
+   CODE GENERATOR CONTROLS
+   ============================================================ */
+
+.code-generator-controls {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+
+#generateCodeButton {
+    padding: 10px 18px;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   GENERATED OUTPUT
+   ============================================================ */
+
+.generated-output {
+    margin-top: 10px;
+    margin-bottom: 25px;
+
+    padding: 20px;
+
+    border: 1px solid #bbb;
+
+    background-color: white;
+}
+
+
+.generated-output h2 {
+    margin-bottom: 20px;
+}
+
+
+/* Two-column layout */
+
+.generated-columns {
+    display: grid;
+
+    grid-template-columns:
+        minmax(280px, 0.8fr)
+        minmax(450px, 1.2fr);
+
+    gap: 20px;
+
+    align-items: start;
+}
+
+
+/* ============================================================
+   LEFT EVENT REFERENCE PANEL
+   ============================================================ */
+
+.event-reference-panel {
+    min-width: 0;
+
+    padding-right: 20px;
+
+    border-right: 1px solid #ccc;
+}
+
+
+.event-reference-panel h3,
+.cpp-output-panel h3 {
+    margin-top: 0;
+}
+
+
+.generated-description {
+    margin-bottom: 20px;
+
+    font-size: 13px;
+
+    color: #555;
+}
+
+
+.motor-event-group {
+    margin-bottom: 25px;
+}
+
+
+.motor-event-group h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+
+    padding-bottom: 5px;
+
+    border-bottom: 1px solid #ddd;
+}
+
+
+.event-reference {
+    display: flex;
+
+    gap: 10px;
+
+    margin-bottom: 12px;
+
+    padding: 8px;
+
+    background-color: #f5f5f5;
+
+    border-radius: 4px;
+}
+
+
+.event-number {
+    min-width: 28px;
+
+    font-family: monospace;
+    font-weight: bold;
+}
+
+
+.event-details {
+    line-height: 1.5;
+}
+
+
+.event-note-name {
+    font-weight: bold;
+}
+
+
+/* ============================================================
+   C++ OUTPUT PANEL
+   ============================================================ */
+
+.cpp-output-panel {
+    min-width: 0;
+}
+
+
+.cpp-output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 15px;
+}
+
+
+#copyCodeButton {
+    padding: 7px 12px;
+
+    cursor: pointer;
+}
+
+
+.copy-message {
+    min-height: 20px;
+
+    margin-bottom: 5px;
+
+    font-size: 13px;
+}
+
+
+.cpp-code-output {
+    overflow-x: auto;
+
+    padding: 15px;
+
+    border: 1px solid #aaa;
+
+    background-color: #f5f5f5;
+
+    font-family: monospace;
+
+    white-space: pre;
+
+    line-height: 1.6;
+}
+
+
+/* Each generated C++ event line */
+
+.cpp-event-line {
+    display: flex;
+
+    gap: 10px;
+}
+
+
+.cpp-line-number {
+    display: inline-block;
+
+    min-width: 28px;
+
+    color: #777;
+
+    user-select: none;
+}
+
+
+.cpp-line-code {
+    white-space: pre;
+}
+
+
+/* ============================================================
+   RESPONSIVE GENERATED OUTPUT
+   ============================================================ */
+
+@media (max-width: 850px) {
+
+    .generated-columns {
+        grid-template-columns: 1fr;
+    }
+
+
+    .event-reference-panel {
+        padding-right: 0;
+        padding-bottom: 20px;
+
+        border-right: none;
+        border-bottom: 1px solid #ccc;
+    }
+}

@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": true,
+      "cwd": "c:/Users/aynaz/Desktop/School/SPARK!/2026-7 Singing Monsters/Sound Engineering/Fall - Prototyping (Software)/Oct02_PROTO/motorLiveSequencer",
+      "program": "c:/Users/aynaz/Desktop/School/SPARK!/2026-7 Singing Monsters/Sound Engineering/Fall - Prototyping (Software)/Oct02_PROTO/motorLiveSequencer/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}

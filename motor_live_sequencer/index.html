@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Motor Music Sequencer</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="sequencer">
+
+        <h1>ECE3 Sound Production Motor Music Sequencer</h1>
+
+
+        <!-- ==================================================
+             SONG SETTINGS
+             ================================================== -->
+
+        <section class="settings">
+
+            <label>
+                Song Name
+
+                <input
+                    type="text"
+                    id="songName"
+                    value="testSong1"
+                >
+            </label>
+
+
+            <label>
+                Number of Motors
+
+                <input
+                    type="number"
+                    id="motorCount"
+                    min="1"
+                    max="6"
+                    value="3"
+                >
+            </label>
+
+
+            <label>
+                Timeline Length (seconds)
+
+                <input
+                    type="number"
+                    id="timelineLength"
+                    min="1"
+                    max="60"
+                    value="5"
+                >
+            </label>
+
+            <label>
+                Snap Interval (ms)
+
+                <input
+                    type="number"
+                    id="snapInterval"
+                    min="1"
+                    value="50"
+                >
+            </label>
+
+            <label>
+                Loop Song
+                <input
+                    type="checkbox"
+                    id="loopSong"
+                    checked
+                >
+            </label>
+
+        </section>
+
+        <!-- ==================================================
+             SELECTED NOTE EDITOR
+             ================================================== -->
+
+        <section
+            class="note-editor hidden"
+            id="noteEditor"
+        >
+
+            <h2>Note Editor</h2>
+
+            <div class="editor-fields">
+
+                <label>
+                    Pitch
+
+                    <select id="editNoteSelect">
+
+                        <option value="C4">C4</option>
+                        <option value="CS4">C#4</option>
+                        <option value="D4">D4</option>
+                        <option value="DS4">D#4</option>
+                        <option value="E4">E4</option>
+                        <option value="F4">F4</option>
+                        <option value="FS4">F#4</option>
+                        <option value="G4">G4</option>
+                        <option value="GS4">G#4</option>
+                        <option value="A4">A4</option>
+                        <option value="AS4">A#4</option>
+                        <option value="B4">B4</option>
+
+                        <option value="C5">C5</option>
+                        <option value="CS5">C#5</option>
+                        <option value="D5">D5</option>
+                        <option value="DS5">D#5</option>
+                        <option value="E5">E5</option>
+                        <option value="F5">F5</option>
+                        <option value="FS5">F#5</option>
+                        <option value="G5">G5</option>
+                        <option value="GS5">G#5</option>
+                        <option value="A5">A5</option>
+                        <option value="AS5">A#5</option>
+                        <option value="B5">B5</option>
+
+                        <option value="C6">C6</option>
+                        <option value="CS6">C#6</option>
+                        <option value="D6">D6</option>
+                        <option value="DS6">D#6</option>
+                        <option value="E6">E6</option>
+                        <option value="F6">F6</option>
+                        <option value="FS6">F#6</option>
+                        <option value="G6">G6</option>
+                        <option value="GS6">G#6</option>
+                        <option value="A6">A6</option>
+                        <option value="AS6">A#6</option>
+                        <option value="B6">B6</option>
+
+                    </select>
+                </label>
+
+
+                <label>
+                    Motor
+
+                    <input
+                        type="number"
+                        id="editMotor"
+                        min="1"
+                        max="6"
+                    >
+                </label>
+
+
+                <label>
+                    Start Time (ms)
+
+                    <input
+                        type="number"
+                        id="editStartTime"
+                        min="0"
+                    >
+                </label>
+
+
+                <label>
+                    Duration (ms)
+
+                    <input
+                        type="number"
+                        id="editDuration"
+                        min="1"
+                    >
+                </label>
+
+            </div>
+
+
+            <div class="editor-buttons">
+
+                <button id="applyEditButton">
+                    Apply Changes
+                </button>
+
+                <button
+                    id="deleteNoteButton"
+                    class="delete-button"
+                >
+                    Delete Note
+                </button>
+
+            </div>
+
+
+            <p
+                id="editorMessage"
+                class="editor-message"
+            ></p>
+
+        </section>
+
+
+        <!-- ==================================================
+             TRANSPORT
+             ================================================== -->
+
+        <section class="transport">
+
+            <button id="playButton">
+                ▶ Preview
+            </button>
+
+            <button id="stopButton">
+                ■ Stop
+            </button>
+
+            <span id="timeDisplay">
+                0.00 / 5.00 s
+            </span>
+
+        </section>
+
+
+        <!-- ==================================================
+             TIMELINE
+             ================================================== -->
+
+        <section class="timeline-section">
+
+            <div id="timeline">
+
+            <!-- Moving playback position indicator -->
+            <div id="playhead"></div>
+
+                <div class="timeline-ruler">
+
+                    <div class="ruler-label-space"></div>
+
+                    <div id="rulerTrack"></div>
+
+                </div>
+
+
+                <div id="motorLanes"></div>
+
+            </div>
+
+        </section>
+
+            <!-- ==================================================
+                CODE GENERATOR
+                ================================================== -->
+
+            <section class="code-generator-controls">
+
+                <button id="generateCodeButton">
+                    Generate Code
+                </button>
+
+            </section>
+
+
+            <!--
+                Hidden until Generate Code is pressed.
+            -->
+            <section
+                id="generatedOutput"
+                class="generated-output hidden"
+            >
+
+                <h2>Generated Song</h2>
+
+                <div class="generated-columns">
+
+
+                    <!-- ==========================================
+                        LEFT: HUMAN-READABLE EVENT LIST
+                        ========================================== -->
+
+                    <div class="event-reference-panel">
+
+                        <h3>Note Events</h3>
+
+                        <p class="generated-description">
+                            Each event number corresponds to the
+                            same numbered line in the generated C++.
+                        </p>
+
+                        <div id="eventReferenceList"></div>
+
+                    </div>
+
+
+                    <!-- ==========================================
+                        RIGHT: GENERATED C++
+                        ========================================== -->
+
+                    <div class="cpp-output-panel">
+
+                        <div class="cpp-output-header">
+
+                            <h3>Note Event Code</h3>
+
+                            <button id="copyCodeButton">
+                                Copy C++
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="copyMessage"
+                            class="copy-message"
+                        ></div>
+
+
+                        <div
+                            id="cppCodeOutput"
+                            class="cpp-code-output"
+                        ></div>
+
+                    </div>
+
+
+                </div>
+
+            </section>
+
+        <p
+        
+            id="statusMessage"
+            
+            class="status-message"
+        ></p>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
