@@ -30,14 +30,22 @@ static void task_entry(void *arg) {
 
   t->init();
 
+  // DEBUG
+  Serial.printf("%s init done, core %d, priority %u\n", t->name, (int)xPortGetCoreID(), (unsigned)uxTaskPriorityGet(NULL));
+  uint32_t count = 0;
+
   xEventGroupSetBits(init_group, 1 << (t - tasks));
   xEventGroupWaitBits(init_group, (1 << NUM_TASKS)-1, pdFALSE, pdTRUE, portMAX_DELAY);
   // If eventgroup fails this will hang without error message
 
-  TickType_t prev_wake = xTaskGetTickCount;
+  TickType_t prev_wake = xTaskGetTickCount();
   while (1) {
-    t->loop();
+    // DEBUG
+    if (count++ % 500 == 0) {
+      Serial.printf("%s: %u bytes stack free\n", t->name, (unsigned)uxTaskGetStackHighWaterMark(NULL));
+    }
 
+    t->loop();
     if (t->period > 0) {
       xTaskDelayUntil(&prev_wake, pdMS_TO_TICKS(t->period));
       // May be problematic, need to check return value for task called after set time 
@@ -46,7 +54,7 @@ static void task_entry(void *arg) {
 }
 
 void tasks_init() { 
-  init_group = xEventGroupCreate() // NEED NULL ERROR CHECKING
+  init_group = xEventGroupCreate(); // NEED NULL ERROR CHECKING
 
   for (int i = 0; i < NUM_TASKS; i++) {
     const Task *t = &tasks[i];

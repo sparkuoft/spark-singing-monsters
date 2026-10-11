@@ -4,6 +4,7 @@
 
 void setup() {
   Serial.begin(115200);
+  delay(2000);
   event_queue_init();
   tasks_init();
   Serial.println("setup done");
