@@ -14,7 +14,7 @@ typedef enum {
 
 typedef struct {
   EventType type;
-  uint8_t id;
+  uint8_t id; // Not necessarily needed? absorb into value?
   int32_t value;
 } Event;
 

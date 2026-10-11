@@ -4,6 +4,7 @@ static QueueHandle_t event_queue;
 
 void event_queue_init() {
   event_queue = xQueueCreate(EVENT_QUEUE_SIZE, sizeof(Event));
+  // NEED NULL ERROR CHECKING
 }
 
 bool event_queue_push(Event *event) {
