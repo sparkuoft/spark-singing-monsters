@@ -1,10 +1,8 @@
 # Integration Notes
 Subteams should group functionality into separate files, such that they run on setup/loop
 
-The init()/tick() should be the actual hardware manipulation
+The init()/loop() should be the actual hardware manipulation
 
-Call event_emit(...) to tell game FSM something
+Call event_queue_push(...) to tell game FSM something
 
-Expose setter commands to game FSM, these should not do any hardware updates leave that to tick()
-
-Mayt need multiple functions???
+Need more queues to talk to peripherals? Need to figure out
