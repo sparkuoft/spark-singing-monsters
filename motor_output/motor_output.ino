@@ -3,6 +3,8 @@
 #include "TestSong.h"
 #include "Notes.h"
 
+// aynaz here!
+
 // pin I2S assignment & motor setup
 const int stpPin[10] = {17, 13, 4, 6, 8, 10, 15};                          // all step pins here
 const int dirPin[10] = {18, 12, 5, 7, 9, 11, 16};                          // all dir pins, dirPins[0] --> dirPin for motor 1, etc.
