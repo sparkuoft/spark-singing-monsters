@@ -2,6 +2,7 @@
 #include "Sequencer.h"
 #include "TestSong.h"
 #include "Notes.h"
+//sidney here !
 
 // pin I2S assignment & motor setup
 const int stpPin[10] = {17, 13, 4, 6, 8, 10, 15};                          // all step pins here

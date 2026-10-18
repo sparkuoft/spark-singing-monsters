@@ -4,6 +4,8 @@
 #include "TestSong.h"
 #include "Notes.h"
 
+//sidney here !
+
 // NoteEvent prototype
 // ------------------
 //
