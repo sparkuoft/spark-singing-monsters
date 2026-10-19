@@ -68,7 +68,7 @@ void updateMotor(Motor &motor) {
 void startNote(Motor &motor, double noteFreq){
   motor.playing = true;
   motor.noteFreq = noteFreq;
-  motor.switchPeriod = (1/noteFreq) * 500000;  // switches STEP state after every half-period
+  motor.switchPeriod = (1/noteFreq) * 1000000 / 2;  // switches STEP state after every half-period
 
   motor.lastStepSwitchTime = micros();  // timer starts at 0 relative to this timestamp
 
