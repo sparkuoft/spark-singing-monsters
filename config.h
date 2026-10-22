@@ -9,8 +9,15 @@
 #define NUM_TRACKS 4
 
 // ----- Pin mappings -----
-
+// Use PIN_<FUNCTION>_<TYPE> pattern
 #define PIN_MODE_SWITCH 9
+#define PIN_TRACK_1_BUTTON 10
+#define PIN_TRACK_2_BUTTON 11
+#define PIN_TRACK_3_BUTTON 12
+#define PIN_TRACK_4_BUTTON 13
+#define PIN_VOLUME_A 14
+#define PIN_VOLUME_B 15
+#define PIN_VOLUME_BUTTON 16
 // etc.
 
 // ----- Enums ------
