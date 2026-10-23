@@ -7,17 +7,19 @@
 // ----- Constants -----
 
 #define NUM_TRACKS 4
+#define ENCODER_MAX_COUNT 1000
+#define ENCODER_FILTER 10000 // in ns
 
 // ----- Pin mappings -----
-// Use PIN_<FUNCTION>_<TYPE> pattern
-#define PIN_MODE_SWITCH 9
-#define PIN_TRACK_1_BUTTON 10
-#define PIN_TRACK_2_BUTTON 11
-#define PIN_TRACK_3_BUTTON 12
-#define PIN_TRACK_4_BUTTON 13
-#define PIN_VOLUME_A 14
-#define PIN_VOLUME_B 15
-#define PIN_VOLUME_BUTTON 16
+// Use PIN_<DEVICE>_<FUNCTION> pattern
+#define PIN_SWITCH_MODE 9
+#define PIN_BUTTON_TRACK_1 10
+#define PIN_BUTTON_TRACK_2 11
+#define PIN_BUTTON_TRACK_3 12
+#define PIN_BUTTON_TRACK_4 13
+#define PIN_ENCODER_A 14
+#define PIN_ENCODER_B 15
+#define PIN_ENCODER_BUTTON 16
 // etc.
 
 // ----- Enums ------

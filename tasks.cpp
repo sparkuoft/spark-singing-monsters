@@ -34,6 +34,7 @@ static void task_entry(void *arg) {
   Serial.printf("%s init done, core %d, priority %u\n", t->name, (int)xPortGetCoreID(), (unsigned)uxTaskPriorityGet(NULL));
   uint32_t count = 0;
 
+  // IMPORTANT: If someone has slow blocking code in init, other tasks (ex. encoder) may have problems
   xEventGroupSetBits(init_group, 1 << (t - tasks));
   xEventGroupWaitBits(init_group, (1 << NUM_TASKS)-1, pdFALSE, pdTRUE, portMAX_DELAY);
   // If eventgroup fails this will hang without error message
