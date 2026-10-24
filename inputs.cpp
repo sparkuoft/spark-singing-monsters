@@ -3,11 +3,11 @@
 #include "driver/pulse_cnt.h"
 
 static pcnt_unit_handle_t encoder_unit;
-static uint8_t count_remainder = 0; // Each encoder dedent is 4 counts, need to track partial counts
+static int8_t count_remainder = 0; // Each encoder dedent is 4 counts, need to track partial counts
 
 typedef struct {
   uint8_t pin;
-  bool stable;
+  bool stable; // Indicates if pressed, not GND/VDD
   uint32_t count;
 } Input;
 
@@ -62,11 +62,11 @@ static void encoder_init() { // Ripped from ESP-IDF documentation
 }
 
 static int encoder_poll() {
-  uint32_t count = 0;
+  int32_t count = 0;
   pcnt_unit_get_count(encoder_unit, &count);
   pcnt_unit_clear_count(encoder_unit);
 
-  uint32_t steps = (count + count_remainder) / 4;
+  int32_t steps = (count + count_remainder) / 4;
   count_remainder = (count + count_remainder) % 4;
 
   return steps;
@@ -74,12 +74,25 @@ static int encoder_poll() {
 
 static void gpio_init(Input *in) {
   pinMode(in->pin, INPUT_PULLUP);
-  in->stable = (digitalRead(in->pin) == HIGH);
+  in->stable = (digitalRead(in->pin) == LOW);
   in->count = 0;
 }
 
-static void gpio_poll(Input *in) {
-  // Debounce logic here
+static bool gpio_poll(Input *in) {
+  bool curr = (digitalRead(in->pin) == LOW);
+
+  if (curr == in->stable) {
+    in->count = 0;
+    return false;
+  }
+  
+  if (++in->count < DEBOUNCE_COUNT) {
+    return false;
+  }
+
+  in->stable = curr;
+  in->count = 0;
+  return true;
 }
 
 // ----- Main functions -----
@@ -96,9 +109,24 @@ void inputs_init() {
 void inputs_loop() {
   int steps = encoder_poll();
   if (steps != 0) {
-    // Send to event queue
+    Event e = {.type = EVT_ENCODER, .id = 0, .value = steps};
+    event_queue_push(&e);
   }
 
-  // Poll buttons
+  if (gpio_poll(&encoder_button) && encoder_button.stable) {
+    Event e = {.type = EVT_ENCODER, .id = 0, .value = 0}; // 0 is reserved for press
+    event_queue_push(&e);
+  }
 
+  if (gpio_poll(&mode_switch)) {
+    Event e = {.type = EVT_MODE_CHANGED, .id = 0, .value = mode_switch.stable};
+    event_queue_push(&e);
+  }
+
+  for (int i = 0; i < NUM_TRACKS; i++) {
+    if (gpio_poll(&track_buttons[i]) && track_buttons[i].stable) {
+      Event e = {.type = EVT_BUTTON_PRESSED, .id = i, .value = 0};
+      event_queue_push(&e);
+    }
+  }
 }

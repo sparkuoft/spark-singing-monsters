@@ -9,6 +9,7 @@
 #define NUM_TRACKS 4
 #define ENCODER_MAX_COUNT 1000
 #define ENCODER_FILTER 10000 // in ns
+#define DEBOUNCE_COUNT 5 
 
 // ----- Pin mappings -----
 // Use PIN_<DEVICE>_<FUNCTION> pattern

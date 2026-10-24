@@ -9,6 +9,7 @@ typedef enum {
   EVT_NONE,
   EVT_BUTTON_PRESSED, // id = track/button index
   EVT_MODE_CHANGED, // value = Mode
+  EVT_ENCODER,
   // need more, ask subteams etc.
 } EventType;
 
