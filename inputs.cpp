@@ -27,8 +27,8 @@ static void encoder_init() { // Ripped from ESP-IDF documentation
   pinMode(PIN_ENCODER_B, INPUT_PULLUP); 
 
   pcnt_unit_config_t unit_config = {
-    .high_limit = ENCODER_MAX_COUNT,
-    .low_limit = -ENCODER_MAX_COUNT
+    .low_limit = -ENCODER_MAX_COUNT,
+    .high_limit = ENCODER_MAX_COUNT
   };
   pcnt_new_unit(&unit_config, &encoder_unit);
 
@@ -62,7 +62,7 @@ static void encoder_init() { // Ripped from ESP-IDF documentation
 }
 
 static int encoder_poll() {
-  int32_t count = 0;
+  int count = 0;
   pcnt_unit_get_count(encoder_unit, &count);
   pcnt_unit_clear_count(encoder_unit);
 

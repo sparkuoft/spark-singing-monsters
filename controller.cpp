@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "events.h"
 
 // ----- Controller owned state -----
 
@@ -6,7 +7,7 @@ static Track tracks[NUM_TRACKS];
 static Mode current_mode;
 static uint32_t last_tick_ms; // Used for sleeping
 
-// ----- Controlller functions -----A
+// ----- Controlller functions -----
 
 void controller_debug() {
   Event e;
