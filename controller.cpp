@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "events.h"
 
 // ----- Controller owned state -----
 
@@ -7,6 +8,13 @@ static Mode current_mode;
 static uint32_t last_tick_ms; // Used for sleeping
 
 // ----- Controlller functions -----
+
+void controller_debug() {
+  Event e;
+  while (event_queue_pop(&e)) {
+    Serial.printf("Event: type %d, id %u, value %d\n", e.type, e.id, e.value);
+  }
+}
 
 void controller_init() {
   // Various init calls from drivers, other subteams
@@ -24,6 +32,9 @@ void controller_init() {
 }
 
 void controller_loop() {
+  // DEBUG:
+  controller_debug();
+
   // Poll inputs manager
 
   // Dequeue events and handle them
