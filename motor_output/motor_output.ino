@@ -2,9 +2,6 @@
 #include "Sequencer.h"
 #include "TestSong.h"
 #include "Notes.h"
-//sidney here !
-
-// aynaz here!
 
 // pin I2S assignment & motor setup
 const int stpPin[10] = {17, 13, 4, 6, 8, 10, 15};                          // all step pins here
@@ -16,8 +13,10 @@ const int i2sDataPin = 42;
 
 const int stepsPerRevolution = 200;                      // 200 steps for 360 degrees, 1 step = 1.8 deg
 
+// motor output defines:
 #define NUM_OF_MOTORS 3
 Motor motors[3];                                         // 3 motors, can scale up
+bool songStarted = false;
 
 void setup() {
 
@@ -29,171 +28,48 @@ void setup() {
     initMotor(motors[motorNum], motorNum + 1, stpPin[motorNum], dirPin[motorNum]);
   }
 
-  // set beginning of song as t = 0;
-  startSequencer(); 
+  // // set beginning of song as t = 0;
+  // startSequencer(); 
 
 }
 
 void loop() {
 
-    // updateSequencer(melody1, melody1Length, motors, melody1Duration, melody1Loop);
-    updateSequencer(chords1, chords1Length, motors, chords1Duration, chords1Loop);
+    // sends 'p' after the song finishes the play it again
+    // Serial.read only runs when a character is already available
 
-    // maintain STEP signals for all 3 motors
-    for (int i = 0; i < NUM_OF_MOTORS; i++) {
-        updateMotor(motors[i]);
+    if (Serial.available() > 0) {
+      char command = Serial.read();
+
+      if (command == 'p' && chords1Done) {
+        songStarted = false;
+        chords1Done = false;
+      }
     }
 
+    // Start sequencer - run once for each playback
+
+    if (!songStarted && !chords1Done) {
+      
+      for (int i = 0; i < chords1Length; i++) {
+        chords1[i].started = false;
+        chords1[i].finished = false;
+      }
+
+      startSequencer();
+      songStarted = true;
+    }
+
+    // PLAY:
+    if (songStarted && !chords1Done) {
+      updateSequencer (chords1, chords1Length, motors, chords1Duration, chords1Loop, chords1Done);
+    }
+
+    // always updated the motor step signals:
+
+    for (int i = 0; i < NUM_OF_MOTORS; i++) {
+      updateMotor(motors[i]);
+    }
+
+    // other non-blocking tasks can run here
 }
-
-// void playNote (int motor, double fNote, double noteDuration){
-//   // (
-
-//     int StpPin = 0;
-
-//     if (motor == 1){
-//       StpPin = StpPinM1;
-//     } else if (motor == 2){
-//       StpPin = StpPinM2;
-//     } else if (motor == 3){
-//       StpPin = StpPinM3;
-//     } else {
-//       return;
-//     }
-
-//   // )
-
-//   // change parameter to note, convert from note name to frequency;
-
-//   double Tstep = (1/fNote) * 1000000;                      // convert frequency (Hz) to period (microseconds)
-//   int numCycles = round(fNote * noteDuration);             // numCycles (cycles) = freq (cycles/s) * time (s)
-
-//     Serial.print("fnote = ");
-//     Serial.print(fNote);
-//     Serial.println("!!!!!!!!!!!");
-
-//   for (int cycle = 0; cycle < numCycles; cycle++){
-
-//     digitalWrite(StpPin, HIGH);
-//     delayMicroseconds(Tstep / 2);             // T (Period) = 1 / freq
-//     digitalWrite(StpPin, LOW);
-//     delayMicroseconds(Tstep / 2);
-//     // delayMicroseconds(72.7272);
-//   }
-// }
-
-// // FUN FUNCTIONS:
-
-// void playMaryHad(){
-//   playNote(1, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(2, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(3, 523.25, 0.4); // C
-
-//   delay(200);
-
-//   playNote(1, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(2, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(3, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(1, 659.26, 0.8); // E
-
-//   delay(200);
-
-//   playNote(2, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(3, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(1, 587.33, 0.8); // D
-
-//   delay(200);
-
-//   playNote(2, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(3, 783.99, 0.4); // G
-
-//   delay(200);
-
-//   playNote(1, 783.99, 0.8); // G
-
-//   delay(200);
-
-//   // PHRASE 1 END
-
-//   playNote(2, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(3, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(1, 523.25, 0.4); // C
-
-//   delay(200);
-
-//   playNote(2, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(3, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(1, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(2, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(3, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   // PHRASE 2 END
-
-//   playNote(1, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(2, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(3, 659.26, 0.4); // E
-
-//   delay(200);
-
-//   playNote(1, 587.33, 0.4); // D
-
-//   delay(200);
-
-//   playNote(2, 523.25, 0.8); // C
-
-//   delay(500);
-
-//   // PHRASE 3 END
-// }
-
-// void initMotor()

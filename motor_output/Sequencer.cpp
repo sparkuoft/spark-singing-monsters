@@ -10,7 +10,7 @@ void startSequencer() {
     songStartTime = millis();
 }
 
-void updateSequencer(NoteEvent events[], int numEvents, Motor motors[], unsigned long songDuration, bool loop) {
+void updateSequencer(NoteEvent events[], int numEvents, Motor motors[], unsigned long songDuration, bool loop, bool &done) {
 
     unsigned long songTime = millis() - songStartTime;
 
@@ -60,6 +60,10 @@ void updateSequencer(NoteEvent events[], int numEvents, Motor motors[], unsigned
 
             // Begin the next loop from time 0.
             songStartTime = millis();
+        }
+
+        if (!loop) {
+            done = true;
         }
     }
 }

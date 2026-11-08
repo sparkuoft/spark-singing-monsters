@@ -22,11 +22,13 @@
   extern const int chords1Length;
   extern const unsigned long chords1Duration;
   extern const bool chords1Loop;
+  extern bool chords1Done;
 
   // melody1
   extern NoteEvent melody1[];
   extern const int melody1Length;
   extern const unsigned long melody1Duration;
   extern const bool melody1Loop;
+  extern bool melody1Done;
 
 #endif

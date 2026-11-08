@@ -16,6 +16,6 @@ struct NoteEvent {
 };
 
 void startSequencer();
-void updateSequencer(NoteEvent events[], int numEvents, Motor motors[], unsigned long songDuration, bool loop);
+void updateSequencer(NoteEvent events[], int numEvents, Motor motors[], unsigned long songDuration, bool loop, bool &done);
 
 #endif

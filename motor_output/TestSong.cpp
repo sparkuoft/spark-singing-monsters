@@ -4,8 +4,6 @@
 #include "TestSong.h"
 #include "Notes.h"
 
-//sidney here !
-
 // NoteEvent prototype
 // ------------------
 //
@@ -17,6 +15,7 @@
 // const int testSong#Length = sizeof(testSong#) / sizeof(testSong#[0]); // how many note events are in one testStong
 // const unsigned long testSong#Duration = duration; // how long the song is
 // const bool testSong#Loop = t/f; // whether the song is supposed to loop or not
+// const bool testSong#Done = t/f; // whether the song is DONE playing or not
 
 // test songs:
 
@@ -67,6 +66,8 @@
     //     };
 
     //     const int melody1Length = sizeof(melody1) / sizeof(melody1[0]);
+    //     const bool melody1Loop = false;
+    //     bool melody1Done = false;
 
     // chords1
 
@@ -99,6 +100,8 @@
         const unsigned long chords1Duration = 20000;
 
         const bool chords1Loop = true;
+
+        bool chords1Done = false;
 
     // melody1
 
@@ -150,4 +153,6 @@
         const unsigned long melody1Duration = 16800;
 
         const bool melody1Loop = true;
+
+        bool melody1Done = false;
 
