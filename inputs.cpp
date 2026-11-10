@@ -18,6 +18,7 @@ static Input track_buttons[NUM_TRACKS] = {
   {PIN_BUTTON_TRACK_4}
 };
 static Input encoder_button = {PIN_ENCODER_BUTTON};
+static Input percussion_button = {PIN_BUTTON_PERCUSSION};
 static Input mode_switch = {PIN_SWITCH_MODE};
 
 // ----- Helper functions -----
@@ -100,6 +101,7 @@ static bool gpio_poll(Input *in) {
 void inputs_init() {
   encoder_init();
   gpio_init(&encoder_button);
+  gpio_init(&percussion_button);
   gpio_init(&mode_switch);
   for (int i = 0; i < NUM_TRACKS; i++) {
     gpio_init(&track_buttons[i]);
@@ -115,6 +117,11 @@ void inputs_loop() {
 
   if (gpio_poll(&encoder_button) && encoder_button.stable) {
     Event e = {.type = EVT_ENCODER, .id = 0, .value = 0}; // 0 is reserved for press
+    event_queue_push(&e);
+  }
+
+  if (gpio_poll(&percussion_button) && percussion_button.stable) {
+    Event e = {.type = EVT_BUTTON_PRESSED, .id = 67, .value = 0}; // MAGIC NUMBER 
     event_queue_push(&e);
   }
 
