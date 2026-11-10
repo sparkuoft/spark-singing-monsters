@@ -13,7 +13,6 @@
 #define LED_BRIGHTNESS 64
 #define LEDS_PER_TRACK 11 // 1 button led + 10 cursor leds
 #define NUM_LEDS 44 // 4 tracks * LEDS_PER_TRACK
-#define SAMPLES_PER_TRACK 10'000'000 // TODO: figure out what value should be
 #define TIMEOUT_DURATION 3000000000  // in ns = 30 s
 
 // ----- Pin mappings -----
@@ -27,6 +26,7 @@
 #define PIN_ENCODER_B 18
 #define PIN_ENCODER_BUTTON 17
 #define PIN_BUTTON_PERCUSSION 14
+#define PIN_LED_TRACK 16
 // etc.
 
 // ----- Enums ------
