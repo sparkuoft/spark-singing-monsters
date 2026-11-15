@@ -22,8 +22,10 @@ Motor motors[NUM_OF_MOTORS];                                         // 3 motors
 // each entry describes one song. NoteEvent arrays stay in TestSong.cpp (THIS WILL BE REMOVED WHEN ECE2/ECE1 INPUTS + TIMELINE ARE INTEGRATED)
 
 const Timeline playlist[] = {
-  arpeggioTimeline,
-  melody1Timeline
+  washing_introTimeline,
+  washing_buildTimeline,
+  washing_body1Timeline,
+  washing_body2Timeline
 };
 
 const int PLAYLIST_COUNT = sizeof(playlist) / sizeof(playlist[0]);
@@ -78,7 +80,7 @@ void setup() {
   }
 
   Serial.println("Motors and percussion will play together automatically.");
-  Serial.println("Press p after the playlist finishes to replay both songs.");
+  Serial.println("Press p after the playlist finishes to replay.");
 
 }
 
@@ -124,7 +126,7 @@ void loop() {
 
       if (currentTimelineIndex >= PLAYLIST_COUNT) {
         playlistDone = true;
-        Serial.println("Playlist finished. Press p to replay both songs.");
+        Serial.println("Playlist finished. Press p to replay.");
       }
 
       // Otherwise, the next loop() call starts the next song with a fresh clock.

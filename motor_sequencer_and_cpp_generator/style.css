@@ -663,3 +663,46 @@ h2 {
         border-bottom: 1px solid #ccc;
     }
 }
+
+/* ============================================================
+   MULTITRACK PERCUSSION + PROJECT FILES
+   ============================================================ */
+.lede { margin: 0 0 20px; color: #555; }
+.secondary, .file-hint, .sample-path { color: #626a75; font-size: .82rem; }
+.file-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0 24px; }
+.file-tools button, .file-button { padding: 10px 15px; background: #eaeef5; border: 1px solid #b8bfcc; border-radius: 5px; cursor: pointer; font: inherit; }
+.file-tools button:hover, .file-button:hover { background: #dce6f8; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sample-library { padding: 14px 20px; margin-bottom: 20px; border: 1px solid #d1d8e2; border-radius: 8px; background: #f8fafc; }
+.sample-library h2 { margin: 0 0 8px; }
+.sample-library p { margin: 0 0 14px; font-size: 0.9rem; color: #4c5666; }
+.sample-file-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+.sample-file-entry { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; min-width: 220px; border: 1px solid #d7e0eb; border-radius: 6px; background: #fff; }
+.sample-path { overflow-wrap: anywhere; }
+.lane-divider { padding: 7px 12px; background: #e9f0fa; border-bottom: 1px solid #a7bdd9; color: #25384f; font-weight: bold; font-size: 12px; }
+.percussion-lane { display: flex; min-height: 54px; border-bottom: 1px solid #d4dce8; }
+.percussion-label { width: 100px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; padding: 9px; font-size: 13px; font-weight: bold; border-right: 1px solid #b5c4d8; background: #e5edf8; }
+.percussion-track { position: relative; height: 54px; flex-shrink: 0; cursor: crosshair; background-color: #f7faff; background-image: linear-gradient(to right, #e2e8f2 1px, transparent 1px); background-size: 10px 100%; }
+.percussion-hit { position: absolute; top: 8px; height: 38px; min-width: 15px; padding: 0 5px; border: 1px solid #334968; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background: #cce4fe; cursor: grab; touch-action: none; user-select: none; z-index: 1; }
+.percussion-hit:active { cursor: grabbing; }
+.percussion-hit[data-sample-id="1"] { background: #f6ceba; border-color: #b86137; }
+.percussion-hit[data-sample-id="2"] { background: #cbe7c5; border-color: #518d51; }
+.percussion-hit[data-sample-id="3"] { background: #d6cefa; border-color: #7862bd; }
+.percussion-hit.selected-hit { outline: 3px solid #244d84; z-index: 2; }
+.timeline-help { max-width: 950px; font-size: 0.88rem; color: #536173; line-height: 1.5; }
+.cpp-line-code { white-space: pre; font-family: Consolas, Monaco, monospace; }
+@media (max-width: 680px) { .file-tools { align-items: stretch; } .sample-file-entry { width: 100%; } }
+
+/* ============================================================
+   COPY-PASTE EXPORT: SEPARATE TestSong.h / TestSong.cpp SNIPPETS
+   ============================================================ */
+.cpp-file-section { margin: 18px 0 24px; }
+.cpp-file-section + .cpp-file-section { padding-top: 18px; border-top: 1px solid #d2d7de; }
+.cpp-file-section h4 { margin: 0; font-size: 0.98rem; font-family: Consolas, Monaco, monospace; }
+.cpp-output-header button { padding: 8px 12px; cursor: pointer; border: 1px solid #8c9eb6; border-radius: 5px; background: #eaf0fa; color: #203953; }
+.cpp-output-header button:hover { background: #dbe8fb; }
+.cpp-file-hint, .cpp-loop-note { font-size: .84rem; color: #596678; line-height: 1.55; }
+.cpp-code-output { display: block; max-height: 430px; overflow: auto; margin: 10px 0 6px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: .84rem; line-height: 1.55; tab-size: 4; user-select: text; }
+.cpp-file-section:first-of-type .cpp-code-output { max-height: 120px; }
+.cpp-loop-note { margin-top: 12px; border-top: 1px solid #d2d7de; padding-top: 12px; }
+@media (max-width: 650px) { .cpp-output-header { align-items: flex-start; flex-wrap: wrap; } }

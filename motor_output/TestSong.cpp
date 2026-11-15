@@ -10,6 +10,219 @@
 // Sample IDs: 1 = /kick.wav, 2 = /snare_1.wav, 3 = /tom_1.wav.
 // A new sample interrupts the previous sample. This player does not mix audio.
 
+// washing_body2
+
+NoteEvent washing_body2Notes[] = {
+    // Motor 2
+    {2, D4, 0, 1950, false, false},
+    {2, E4, 2000, 950, false, false},
+    {2, D4, 3000, 950, false, false},
+    {2, F4, 4000, 950, false, false},
+    {2, C4, 5000, 950, false, false},
+    {2, F4, 6000, 950, false, false},
+    {2, G4, 7000, 450, false, false},
+
+    // Motor 3
+    {3, A4, 0, 450, false, false},
+    {3, D5, 500, 450, false, false},
+    {3, C5, 1000, 200, false, false},
+    {3, D5, 1250, 200, false, false},
+    {3, AS4, 1500, 450, false, false},
+    {3, A4, 2000, 450, false, false},
+    {3, G4, 2500, 200, false, false},
+    {3, A4, 2750, 200, false, false},
+    {3, F4, 3000, 450, false, false},
+    {3, FS4, 3500, 200, false, false},
+    {3, G4, 3750, 200, false, false},
+    {3, A4, 4000, 450, false, false},
+    {3, F4, 4500, 450, false, false},
+    {3, E4, 5000, 200, false, false},
+    {3, F4, 5250, 200, false, false},
+    {3, G4, 5500, 200, false, false},
+    {3, A4, 5750, 200, false, false},
+    {3, AS4, 6000, 450, false, false},
+    {3, C5, 6500, 450, false, false},
+    {3, AS4, 7000, 450, false, false},
+    {3, A4, 7500, 450, false, false},
+};
+
+SampleEvent washing_body2Samples[] = {
+    {1, 0, false}, // Kick
+    {1, 250, false}, // Kick
+    {2, 500, false}, // Snare
+    {2, 750, false}, // Snare
+    {1, 1000, false}, // Kick
+    {1, 1250, false}, // Kick
+    {2, 1500, false}, // Snare
+    {2, 1750, false}, // Snare
+    {1, 2000, false}, // Kick
+    {1, 2250, false}, // Kick
+    {2, 2500, false}, // Snare
+    {2, 2750, false}, // Snare
+    {1, 3000, false}, // Kick
+    {1, 3250, false}, // Kick
+    {2, 3500, false}, // Snare
+    {2, 3750, false}, // Snare
+    {1, 4000, false}, // Kick
+    {1, 4250, false}, // Kick
+    {1, 5000, false}, // Kick
+    {1, 5250, false}, // Kick
+    {1, 6000, false}, // Kick
+    {1, 6250, false}, // Kick
+};
+
+const Timeline washing_body2Timeline = {
+    "washing_body2",
+    washing_body2Notes,
+    sizeof(washing_body2Notes) / sizeof(washing_body2Notes[0]),
+    washing_body2Samples,
+    sizeof(washing_body2Samples) / sizeof(washing_body2Samples[0]),
+    8000
+};
+
+// washing_body1
+
+NoteEvent washing_body1Notes[] = {
+    // Motor 2
+    {2, D4, 0, 1950, false, false},
+    {2, E4, 2000, 950, false, false},
+    {2, D4, 3000, 950, false, false},
+    {2, F4, 4000, 950, false, false},
+    {2, C4, 5000, 950, false, false},
+    {2, F4, 6000, 950, false, false},
+    {2, G4, 7000, 450, false, false},
+
+    // Motor 3
+    {3, A4, 0, 450, false, false},
+    {3, D5, 500, 450, false, false},
+    {3, C5, 1000, 200, false, false},
+    {3, D5, 1250, 200, false, false},
+    {3, AS4, 1500, 450, false, false},
+    {3, A4, 2000, 450, false, false},
+    {3, G4, 2500, 200, false, false},
+    {3, A4, 2750, 200, false, false},
+    {3, F4, 3000, 450, false, false},
+    {3, FS4, 3500, 200, false, false},
+    {3, G4, 3750, 200, false, false},
+    {3, A4, 4000, 450, false, false},
+    {3, F4, 4500, 450, false, false},
+    {3, E4, 5000, 200, false, false},
+    {3, F4, 5250, 200, false, false},
+    {3, G4, 5500, 200, false, false},
+    {3, A4, 5750, 200, false, false},
+    {3, AS4, 6000, 450, false, false},
+    {3, C5, 6500, 450, false, false},
+    {3, AS4, 7000, 450, false, false},
+    {3, A4, 7500, 450, false, false},
+};
+
+const Timeline washing_body1Timeline = {
+    "washing_body1",
+    washing_body1Notes,
+    sizeof(washing_body1Notes) / sizeof(washing_body1Notes[0]),
+    nullptr,
+    0,
+    8000
+};
+
+// washing_intro
+
+SampleEvent washing_introSamples[] = {
+    {1, 0, false}, // Kick
+    {1, 250, false}, // Kick
+    {2, 500, false}, // Snare
+    {2, 750, false}, // Snare
+    {1, 1000, false}, // Kick
+    {1, 1250, false}, // Kick
+    {2, 1500, false}, // Snare
+    {2, 1750, false}, // Snare
+};
+
+const Timeline washing_introTimeline = {
+    "washing_intro",
+    nullptr,
+    0,
+    washing_introSamples,
+    sizeof(washing_introSamples) / sizeof(washing_introSamples[0]),
+    2000
+};
+
+// washing_build
+
+NoteEvent washing_buildNotes[] = {
+    // Motor 1
+    {1, A4, 0, 200, false, false},
+    {1, A4, 250, 200, false, false},
+    {1, A4, 500, 200, false, false},
+    {1, A4, 750, 200, false, false},
+    {1, A4, 1000, 200, false, false},
+    {1, A4, 1250, 200, false, false},
+    {1, A4, 1500, 200, false, false},
+    {1, A4, 1750, 200, false, false},
+    {1, A4, 2000, 200, false, false},
+    {1, A4, 2250, 200, false, false},
+    {1, A4, 2500, 200, false, false},
+    {1, A4, 2750, 200, false, false},
+    {1, A4, 3000, 200, false, false},
+    {1, A4, 3250, 200, false, false},
+    {1, A4, 3500, 200, false, false},
+    {1, A4, 3750, 200, false, false},
+
+    // Motor 2
+    {2, D4, 3000, 200, false, false},
+    {2, D4, 3250, 200, false, false},
+    {2, D4, 3500, 200, false, false},
+    {2, D4, 3750, 200, false, false},
+
+    // Motor 3
+    {3, A5, 2000, 200, false, false},
+    {3, A5, 2250, 200, false, false},
+    {3, A5, 2500, 200, false, false},
+    {3, A5, 2750, 200, false, false},
+    {3, A5, 3000, 200, false, false},
+    {3, A5, 3250, 200, false, false},
+    {3, A5, 3500, 200, false, false},
+    {3, A5, 3750, 200, false, false},
+};
+
+const Timeline washing_buildTimeline = {
+    "washing_build",
+    washing_buildNotes,
+    sizeof(washing_buildNotes) / sizeof(washing_buildNotes[0]),
+    nullptr,
+    0,
+    4000
+};
+
+// demosong
+
+NoteEvent demosongNotes[] = {
+    // Motor 1
+    {1, A4, 0, 4000, false, false},
+    {1, G4, 4000, 4000, false, false},
+    {1, D4, 8000, 8000, false, false},
+
+    // Motor 2
+    {2, CS5, 0, 4000, false, false},
+    {2, AS4, 4000, 4000, false, false},
+    {2, FS4, 8000, 4000, false, false},
+    {2, F4, 12000, 4000, false, false},
+
+    // Motor 3
+    {3, E4, 0, 4000, false, false},
+    {3, CS5, 4000, 4000, false, false},
+    {3, A4, 8000, 8000, false, false},
+};
+
+const Timeline demosongTimeline = {
+    "demosong",
+    demosongNotes,
+    sizeof(demosongNotes) / sizeof(demosongNotes[0]),
+    nullptr,
+    0,
+    16000
+};
+
 NoteEvent chords1Notes[] = {
     // Motor 1
     {1, C4, 0, 5000, false, false},

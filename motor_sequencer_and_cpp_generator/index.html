@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Motor Music Sequencer</title>
+    <title>ECE3 Sound Production Sequencer</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,7 +14,8 @@
 
     <main class="sequencer">
 
-        <h1>ECE3 Sound Production Motor Music Sequencer</h1>
+        <h1>ECE3 Sound Production Sequencer</h1>
+        <p class="lede">Build motor notes and speaker percussion on one timeline, then export directly to the ESP32.</p>
 
 
         <!-- ==================================================
@@ -24,12 +25,12 @@
         <section class="settings">
 
             <label>
-                Song Name
+                Timeline Name
 
                 <input
                     type="text"
                     id="songName"
-                    value="testSong1"
+                    value="testTimeline1"
                 >
             </label>
 
@@ -71,7 +72,7 @@
             </label>
 
             <label>
-                Loop Song
+                Loop Timeline (JSON setting only)
                 <input
                     type="checkbox"
                     id="loopSong"
@@ -79,6 +80,21 @@
                 >
             </label>
 
+        </section>
+
+        <!-- Save/load ONE composition at a time; shared WAV assets live in ../motor_output/data/. -->
+        <section class="file-tools" aria-label="Timeline files">
+            <button type="button" id="newTimelineButton">New Timeline</button>
+            <button type="button" id="saveTimelineButton">Save Timeline (.json)</button>
+            <label class="file-button" for="loadTimelineInput">Load Timeline (.json)</label>
+            <input type="file" id="loadTimelineInput" accept=".json,application/json" class="visually-hidden">
+            <span class="file-hint">Switch between compositions using Save / Load. All compositions reuse WAVs in motor_output/data/.</span>
+        </section>
+
+        <section class="sample-library" aria-labelledby="sampleLibraryHeading">
+            <h2 id="sampleLibraryHeading">Sample library <span class="secondary">(fixed browser paths)</span></h2>
+            <p>Preview automatically reads the same WAV files as ESP32 LittleFS from <code>../motor_output/data/</code>; no file selection is needed. Export checks for overlapping percussion playback and blocks conflicting hits.</p>
+            <div class="sample-file-grid" id="sampleFileGrid"></div>
         </section>
 
         <!-- ==================================================
@@ -202,6 +218,20 @@
         </section>
 
 
+        <!-- Trigger events are instantaneous: unlike motor notes, they have no duration. -->
+        <section class="note-editor hidden" id="sampleEditor">
+            <h2>Percussion Hit Editor</h2>
+            <div class="editor-fields">
+                <label>Instrument<select id="editSampleSelect"></select></label>
+                <label>Start Time (ms)<input id="editSampleStartTime" type="number" min="0"></label>
+            </div>
+            <div class="editor-buttons">
+                <button id="applySampleEditButton" type="button">Apply Changes</button>
+                <button id="deleteSampleButton" class="delete-button" type="button">Delete Hit</button>
+            </div>
+            <p id="sampleEditorMessage" class="editor-message"></p>
+        </section>
+
         <!-- ==================================================
              TRANSPORT
              ================================================== -->
@@ -245,9 +275,13 @@
 
                 <div id="motorLanes"></div>
 
+                <div class="lane-divider">Percussion · click to place a hit, drag to move</div>
+                <div id="percussionLanes"></div>
+
             </div>
 
         </section>
+        <p class="timeline-help">Motor notes can be dragged and resized. Percussion hits are triggers: select to change their instrument/time, or press Delete. On the ESP32, each new percussion hit interrupts the previous one, even across different percussion rows.</p>
 
             <!-- ==================================================
                 CODE GENERATOR
@@ -256,21 +290,21 @@
             <section class="code-generator-controls">
 
                 <button id="generateCodeButton">
-                    Generate Code
+                    Generate C++ Timeline
                 </button>
 
             </section>
 
 
             <!--
-                Hidden until Generate Code is pressed.
+                Hidden until Generate C++ Timeline is pressed.
             -->
             <section
                 id="generatedOutput"
                 class="generated-output hidden"
             >
 
-                <h2>Generated Song</h2>
+                <h2>Generated Timeline</h2>
 
                 <div class="generated-columns">
 
@@ -281,11 +315,10 @@
 
                     <div class="event-reference-panel">
 
-                        <h3>Note Events</h3>
+                        <h3>Motor Notes &amp; Percussion Hits</h3>
 
                         <p class="generated-description">
-                            Each event number corresponds to the
-                            same numbered line in the generated C++.
+                            Event summary grouped by track. The code includes NoteEvent, SampleEvent, and the complete Timeline definition.
                         </p>
 
                         <div id="eventReferenceList"></div>
@@ -294,35 +327,34 @@
 
 
                     <!-- ==========================================
-                        RIGHT: GENERATED C++
+                        RIGHT: PASTE-READY TestSong.h AND TestSong.cpp
                         ========================================== -->
 
                     <div class="cpp-output-panel">
+                        <h3>Copy into your existing firmware files</h3>
+                        <p class="generated-description">Paste each snippet <strong>inside your existing file</strong>. Do not replace the whole file. If you are regenerating an existing timeline name, replace the old declaration and definitions rather than adding duplicates.</p>
 
-                        <div class="cpp-output-header">
+                        <section class="cpp-file-section" aria-labelledby="headerCodeTitle">
+                            <div class="cpp-output-header">
+                                <h4 id="headerCodeTitle">// Paste into TestSong.h</h4>
+                                <button type="button" id="copyHeaderCodeButton">Copy TestSong.h</button>
+                            </div>
+                            <p class="cpp-file-hint">Place next to your existing <code>extern const Timeline ...;</code> declarations, before <code>#endif</code>.</p>
+                            <pre id="headerCodeOutput" class="cpp-code-output"></pre>
+                            <p id="copyHeaderMessage" class="copy-message" aria-live="polite"></p>
+                        </section>
 
-                            <h3>Note Event Code</h3>
-
-                            <button id="copyCodeButton">
-                                Copy C++
-                            </button>
-
-                        </div>
-
-
-                        <div
-                            id="copyMessage"
-                            class="copy-message"
-                        ></div>
-
-
-                        <div
-                            id="cppCodeOutput"
-                            class="cpp-code-output"
-                        ></div>
-
+                        <section class="cpp-file-section" aria-labelledby="sourceCodeTitle">
+                            <div class="cpp-output-header">
+                                <h4 id="sourceCodeTitle">// Paste into TestSong.cpp</h4>
+                                <button type="button" id="copySourceCodeButton">Copy TestSong.cpp</button>
+                            </div>
+                            <p class="cpp-file-hint">Paste after your existing timelines; the snippet includes the motor notes, percussion hits, and <code>const Timeline</code> definition.</p>
+                            <pre id="sourceCodeOutput" class="cpp-code-output"></pre>
+                            <p id="copySourceMessage" class="copy-message" aria-live="polite"></p>
+                        </section>
+                        <p class="cpp-loop-note">Looping is controlled by your <code>.ino</code> playback code. No extra <code>Loop</code> constant is generated; the checkbox above remains stored in timeline JSON.</p>
                     </div>
-
 
                 </div>
 

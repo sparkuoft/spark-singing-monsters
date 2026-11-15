@@ -128,14 +128,12 @@ const generatedOutput =
 const eventReferenceList =
     document.getElementById("eventReferenceList");
 
-const cppCodeOutput =
-    document.getElementById("cppCodeOutput");
-
-const copyCodeButton =
-    document.getElementById("copyCodeButton");
-
-const copyMessage =
-    document.getElementById("copyMessage");
+const headerCodeOutput = document.getElementById("headerCodeOutput");
+const sourceCodeOutput = document.getElementById("sourceCodeOutput");
+const copyHeaderCodeButton = document.getElementById("copyHeaderCodeButton");
+const copySourceCodeButton = document.getElementById("copySourceCodeButton");
+const copyHeaderMessage = document.getElementById("copyHeaderMessage");
+const copySourceMessage = document.getElementById("copySourceMessage");
 
 
 // ============================================================
@@ -211,6 +209,40 @@ const NOTE_FREQUENCIES = {
 
 const noteEvents = [];
 
+// ============================================================
+// HARDCODED SAMPLE PATHS (browser preview)
+// ============================================================
+//
+// Reuse the same WAV files that are uploaded to ESP32 LittleFS.
+// This script lives in motor_sequencer_and_cpp_generator/; motor_output/
+// is a sibling directory. Start the HTTP server from the repository root.
+//
+// No file picker is needed; Preview loads these fixed paths automatically.
+// When adding new sounds in the future, add another {id, name, file} entry
+// here AND update the ESP32 sample ID -> LittleFS filename mapping.
+// Browser paths are relative to index.html, NOT the ESP32's "/kick.wav" path.
+// Future pitched instruments can reuse this registry, but sustained notes
+// will also need note-duration and playback support in both systems.
+//
+const SAMPLE_LIBRARY = Object.freeze([
+    { id: 1, name: "Kick",  file: "../motor_output/data/kick.wav" },
+    { id: 2, name: "Snare", file: "../motor_output/data/snare_1.wav" },
+    { id: 3, name: "Tom",   file: "../motor_output/data/tom_1.wav" }
+]);
+const sampleEvents = []; // {id, sampleID, startTime}; zero duration by design
+let nextSampleEventID = 1;
+let selectedSampleEventID = null;
+let sampleInteraction = null;
+const decodedSampleCache = new Map(); // sampleID -> {path, buffer}
+let activeSampleNodes = [];
+
+const percussionLanes = document.getElementById("percussionLanes");
+const sampleEditor = document.getElementById("sampleEditor");
+const editSampleSelect = document.getElementById("editSampleSelect");
+const editSampleStartTime = document.getElementById("editSampleStartTime");
+const sampleEditorMessage = document.getElementById("sampleEditorMessage");
+
+
 
 // Each note gets a permanent unique ID.
 //
@@ -257,16 +289,12 @@ let isPlaying = false;
 // CODE GENERATOR STATE
 // ============================================================
 //
-// This stores the CLEAN generated C++.
-//
-// The visual code display has line numbers.
-// This string does not.
-//
-// Copy C++ copies this string.
-//
+// Two independently copyable snippets for the existing TestSong files.
+// Neither contains a full replacement file or a duplicate include guard.
 // ============================================================
 
-let generatedCppCode = "";
+let generatedHeaderCode = "";
+let generatedSourceCode = "";
 
 
 // ============================================================
@@ -709,6 +737,7 @@ function addNoteFromClick(
     renderNotes();
 
     updateEditor();
+    hideGeneratedOutput();
 }
 
 
@@ -920,16 +949,13 @@ function renderNotes() {
 // ============================================================
 
 function selectNote(eventID) {
-
-    selectedEventID =
-        eventID;
-
-
+    selectedSampleEventID = null;
+    selectedEventID = eventID;
     clearMessages();
-
     renderNotes();
-
+    renderSampleHits();
     updateEditor();
+    updateSampleEditor();
 }
 
 
@@ -947,7 +973,7 @@ function updateEditor() {
 
     if (!selectedEvent) {
 
-        noteEditor.classList.add(
+noteEditor.classList.add(
             "hidden"
         );
 
@@ -1090,6 +1116,7 @@ function applyEditorChanges() {
     renderNotes();
 
     updateEditor();
+    hideGeneratedOutput();
 }
 
 
@@ -1136,6 +1163,7 @@ function deleteSelectedNote() {
     renderNotes();
 
     updateEditor();
+    hideGeneratedOutput();
 }
 
 
@@ -1336,6 +1364,7 @@ function handlePointerMove(
             renderNotes();
 
             updateEditor();
+            hideGeneratedOutput();
         }
     }
 
@@ -1379,6 +1408,7 @@ function handlePointerMove(
             renderNotes();
 
             updateEditor();
+            hideGeneratedOutput();
         }
     }
 }
@@ -1505,33 +1535,10 @@ function createTimelineRuler() {
 // ============================================================
 
 function updateTrackGrid() {
-
-    const snapInterval =
-        getSnapInterval();
-
-
-    const gridWidth =
-        (
-            snapInterval /
-            1000
-        ) *
-        PIXELS_PER_SECOND;
-
-
-    const tracks =
-        motorLanes.querySelectorAll(
-            ".motor-track"
-        );
-
-
-    tracks.forEach(
-        track => {
-
-            track.style.backgroundSize =
-                gridWidth +
-                "px 100%";
-        }
-    );
+    const gridWidth = (getSnapInterval() / 1000) * PIXELS_PER_SECOND;
+    document.querySelectorAll(".motor-track, .percussion-track").forEach(track => {
+        track.style.backgroundSize = gridWidth + "px 100%";
+    });
 }
 
 
@@ -1584,12 +1591,10 @@ async function previewSong() {
     clearMessages();
 
 
-    if (
-        noteEvents.length === 0
-    ) {
+    if (noteEvents.length === 0 && sampleEvents.length === 0) {
 
         statusMessage.textContent =
-            "Add at least one note before previewing.";
+            "Add at least one motor note or percussion hit before previewing.";
 
         return;
     }
@@ -1607,6 +1612,24 @@ async function previewSong() {
         await context.resume();
     }
 
+
+    // Load WAVs from the hardcoded paths before scheduling on the same clock.
+    const sampleBuffers = new Map();
+    const missingNames = [];
+    for (const instrument of SAMPLE_LIBRARY) {
+        if (!sampleEvents.some(hit => hit.sampleID === instrument.id)) continue;
+        try {
+            const buffer = await getSampleBuffer(instrument.id, context);
+            if (buffer) sampleBuffers.set(instrument.id, buffer);
+            else missingNames.push(instrument.name);
+        } catch (error) {
+            missingNames.push(instrument.name);
+            console.warn("Could not decode sample", instrument.name, error);
+        }
+    }
+    if (missingNames.length) {
+        statusMessage.textContent = "Could not load WAV(s): " + missingNames.join(", ") + ". Check SAMPLE_LIBRARY paths and run this page from a server rooted at spark-singing-monsters/. Available sounds and motor notes still play.";
+    }
 
     isPlaying =
         true;
@@ -1770,6 +1793,10 @@ async function previewSong() {
     }
 
 
+    // The ESP32 has ONE sample player. Each later percussion hit
+    // immediately cuts off the previous hit, rather than mixing them.
+    scheduleSamplePreview(context, sampleBuffers);
+
     playhead.style.display =
         "block";
 
@@ -1888,6 +1915,10 @@ function stopPreview() {
     activeAudioNodes =
         [];
 
+    for (const source of activeSampleNodes) {
+        try { source.stop(); } catch (error) { /* already stopped */ }
+    }
+    activeSampleNodes = [];
 
     if (
         playheadAnimationID !==
@@ -1899,7 +1930,7 @@ function stopPreview() {
         );
 
 
-        playheadAnimationID =
+playheadAnimationID =
             null;
     }
 
@@ -1921,6 +1952,10 @@ function finishPreview() {
     activeAudioNodes =
         [];
 
+    for (const source of activeSampleNodes) {
+        try { source.stop(); } catch (error) { /* already stopped */ }
+    }
+    activeSampleNodes = [];
 
     if (
         playheadAnimationID !==
@@ -2034,6 +2069,7 @@ function changeMotorCount() {
     createTimelineRuler();
 
     updateEditor();
+    hideGeneratedOutput();
 }
 
 
@@ -2042,87 +2078,25 @@ function changeMotorCount() {
 // ============================================================
 
 function changeTimelineLength() {
-
     clearMessages();
-
-
-    let requestedLengthSeconds =
-        Number(
-            timelineLengthInput.value
-        );
-
-
-    requestedLengthSeconds =
-        Math.max(
-            1,
-            Math.min(
-                60,
-                requestedLengthSeconds
-            )
-        );
-
-
-    const requestedLengthMs =
-        requestedLengthSeconds *
-        1000;
-
-
-    // Find latest note end.
-    let latestEndTime =
-        0;
-
-
-    for (
-        const noteEvent
-        of noteEvents
-    ) {
-
-        const eventEnd =
-            noteEvent.startTime +
-            noteEvent.noteDuration;
-
-
-        latestEndTime =
-            Math.max(
-                latestEndTime,
-                eventEnd
-            );
-    }
-
-
-    // Don't shorten timeline through existing notes.
-    if (
-        latestEndTime >
-        requestedLengthMs
-    ) {
-
-        const minimumLengthSeconds =
-            Math.ceil(
-                latestEndTime /
-                1000
-            );
-
-
-        timelineLengthInput.value =
-            minimumLengthSeconds;
-
-
-        statusMessage.textContent =
-            "The timeline cannot be shortened past an existing note.";
-
+    const rawSeconds = Number(timelineLengthInput.value);
+    const requestedSeconds = Number.isFinite(rawSeconds) ? Math.max(1, Math.min(60, Math.ceil(rawSeconds))) : 5;
+    const requestedMs = requestedSeconds * 1000;
+    let latestEnd = 0;
+    for (const note of noteEvents) latestEnd = Math.max(latestEnd, note.startTime + note.noteDuration);
+    for (const hit of sampleEvents) latestEnd = Math.max(latestEnd, hit.startTime + 1);
+    if (latestEnd > requestedMs) {
+        timelineLengthInput.value = Math.ceil(latestEnd / 1000);
+        statusMessage.textContent = "Timeline cannot end before an existing note or percussion hit. Remove or move the event first.";
         return;
     }
-
-
-    timelineLengthInput.value =
-        requestedLengthSeconds;
-
-
-    updateTimeDisplay();
-
+    timelineLengthInput.value = requestedSeconds;
+    if (isPlaying) stopPreview();
     createTimelineRuler();
-
     createMotorLanes();
+    createPercussionLanes();
+    updateTimeDisplay();
+    hideGeneratedOutput();
 }
 
 
@@ -2131,16 +2105,9 @@ function changeTimelineLength() {
 // ============================================================
 
 function changeSnapInterval() {
-
     clearMessages();
-
-
-    // Validates/clamps the input.
     getSnapInterval();
-
-
     createTimelineRuler();
-
     updateTrackGrid();
 }
 
@@ -2239,111 +2206,70 @@ function getSortedEventsForCode() {
 //
 // ============================================================
 
-function generateCppCode(
-    songName,
-    sortedEvents,
-    songDuration,
-    loopSong
-) {
+// Build code that can be PASTED inside existing TestSong.h and TestSong.cpp.
+// The header already includes Sequencer.h and the source already includes
+// Arduino.h, TestSong.h, and Notes.h. Do not repeat those includes.
+// Looping is controlled by the .ino call to updateSequencer(), not by
+// declarations in TestSong.h/.cpp.
+function generateCppCode(timelineName, sortedNotes, timelineDuration) {
+    const noteArray = timelineName + "Notes";
+    const sampleArray = timelineName + "Samples";
+    const timelineObject = timelineName + "Timeline";
+    const sortedSamples = getSortedSamplesForCode();
 
-    const lines =
-        [];
+    // Paste this single declaration alongside the other extern Timelines.
+    const headerCode = `extern const Timeline ${timelineObject};`;
 
+    const lines = [
+        `// ${timelineName}`,
+        ""
+    ];
 
-    lines.push(
-        `NoteEvent ${songName}[] = {`
-    );
-
-
-    let previousMotor =
-        null;
-
-
-    for (
-        const noteEvent
-        of sortedEvents
-    ) {
-
-        // ----------------------------------------------------
-        // NEW MOTOR GROUP
-        // ----------------------------------------------------
-
-        if (
-            noteEvent.motorNum !==
-            previousMotor
-        ) {
-
-            if (
-                previousMotor !==
-                null
-            ) {
-
-                lines.push("");
+    if (sortedNotes.length) {
+        lines.push(`NoteEvent ${noteArray}[] = {`);
+        let previousMotor = null;
+        for (const note of sortedNotes) {
+            if (note.motorNum !== previousMotor) {
+                if (previousMotor !== null) lines.push("");
+                lines.push(`    // Motor ${note.motorNum}`);
+                previousMotor = note.motorNum;
             }
-
-
-            lines.push(
-                `    // Motor ${noteEvent.motorNum}`
-            );
-
-
-            previousMotor =
-                noteEvent.motorNum;
+            lines.push(`    {${note.motorNum}, ${note.note}, ${note.startTime}, ${note.noteDuration}, false, false},`);
         }
-
-
-        // ----------------------------------------------------
-        // NOTE EVENT
-        // ----------------------------------------------------
-
-        lines.push(
-            `    {${noteEvent.motorNum}, ${noteEvent.note}, ${noteEvent.startTime}, ${noteEvent.noteDuration}, false, false},`
-        );
+        lines.push("};", "");
     }
 
+    if (sortedSamples.length) {
+        lines.push(`SampleEvent ${sampleArray}[] = {`);
+        for (const hit of sortedSamples) {
+            const instrument = getSampleInstrument(hit.sampleID);
+            lines.push(`    {${hit.sampleID}, ${hit.startTime}, false}, // ${instrument.name}`);
+        }
+        lines.push("};", "");
+    }
+
+    // Empty event types use nullptr and 0. For nonempty arrays, calculate
+    // the count the same way as the existing handwritten TestSong.cpp.
+    const notePointer = sortedNotes.length ? noteArray : "nullptr";
+    const noteCount = sortedNotes.length
+        ? `sizeof(${noteArray}) / sizeof(${noteArray}[0])`
+        : "0";
+    const samplePointer = sortedSamples.length ? sampleArray : "nullptr";
+    const sampleCount = sortedSamples.length
+        ? `sizeof(${sampleArray}) / sizeof(${sampleArray}[0])`
+        : "0";
 
     lines.push(
+        `const Timeline ${timelineObject} = {`,
+        `    "${timelineName}",`,
+        `    ${notePointer},`,
+        `    ${noteCount},`,
+        `    ${samplePointer},`,
+        `    ${sampleCount},`,
+        `    ${timelineDuration}`,
         "};"
     );
-
-
-    lines.push(
-        ""
-    );
-
-
-    lines.push(
-        `const int ${songName}Length =`
-    );
-
-
-    lines.push(
-        `    sizeof(${songName}) / sizeof(${songName}[0]);`
-    );
-
-    lines.push(
-    ""
-    );
-
-
-    lines.push(
-        `const unsigned long ${songName}Duration = ${songDuration};`
-    );
-
-
-    lines.push(
-        ""
-    );
-
-
-    lines.push(
-        `const bool ${songName}Loop = ${loopSong};`
-    );
-
-
-    return lines.join(
-        "\n"
-    );
+    return { headerCode, sourceCode: lines.join("\n") };
 }
 
 
@@ -2351,606 +2277,202 @@ function generateCppCode(
 // GENERATE LEFT EVENT REFERENCE LIST
 // ============================================================
 
-function generateEventReferenceList(
-    sortedEvents
-) {
-
-    eventReferenceList.innerHTML =
-        "";
-
-
-    let currentMotor =
-        null;
-
-
-    let currentMotorGroup =
-        null;
-
-
-    let eventNumber =
-        1;
-
-
-    for (
-        const noteEvent
-        of sortedEvents
-    ) {
-
-        // ----------------------------------------------------
-        // CREATE MOTOR HEADING
-        // ----------------------------------------------------
-
-        if (
-            noteEvent.motorNum !==
-            currentMotor
-        ) {
-
-            currentMotor =
-                noteEvent.motorNum;
+function generateEventReferenceList(sortedNotes) {
+    eventReferenceList.innerHTML = "";
+    function addGroup(title, events, format) {
+        if (!events.length) return;
+        const group = document.createElement("div");
+        group.className = "motor-event-group";
+        const heading = document.createElement("h4");
+        heading.textContent = title;
+        group.appendChild(heading);
+        events.forEach((ev, index) => {
+            const row = document.createElement("div");
+            row.className = "event-reference";
+            const number = document.createElement("span");
+            number.className = "event-number";
+            number.textContent = (index + 1) + ".";
+            const desc = document.createElement("span");
+            desc.className = "event-details";
+            desc.textContent = format(ev);
+            row.append(number, desc);
+            group.appendChild(row);
+        });
+        eventReferenceList.appendChild(group);
+    }
+    for (let m = 1; m <= Number(motorCountInput.value); m++) {
+        addGroup("Motor " + m, sortedNotes.filter(note => note.motorNum === m),
+            note => `${getDisplayNoteName(note.note)} · ${note.startTime} ms · ${note.noteDuration} ms long`);
+    }
+    addGroup("Percussion", getSortedSamplesForCode(), hit =>
+        `${getSampleInstrument(hit.sampleID).name} (ID ${hit.sampleID}) · ${hit.startTime} ms`);
+}
 
 
-            currentMotorGroup =
-                document.createElement(
-                    "div"
-                );
+// ============================================================
+// DISPLAY BOTH PASTE-READY CODE SNIPPETS
+// ============================================================
+function displayCppCode() {
+    // A <pre> retains indentation and lets users select/copy directly.
+    // Buttons copy only the corresponding snippet, not both files at once.
+    headerCodeOutput.textContent = generatedHeaderCode;
+    sourceCodeOutput.textContent = generatedSourceCode;
+}
 
 
-            currentMotorGroup.className =
-                "motor-event-group";
+// ============================================================
+// PERCUSSION EXPORT CHECK: ONLY ONE ACTIVE WAV AT A TIME
+// ============================================================
+//
+// SampleEvent contains only a start time, not a duration.
+// To detect real playback overlap we read the length of each WAV file.
+// This checks the EXACT WAVs also used by the ESP32 (not just equal times).
+// Motor notes can still overlap each other and percussion normally.
+// A missing/unreadable WAV blocks export because its duration is unknown.
+//
+async function validatePercussionForExport() {
+    const hits = getSortedSamplesForCode();
+    if (hits.length < 2) return { ok: true };
 
-
-            const motorHeading =
-                document.createElement(
-                    "h4"
-                );
-
-
-            motorHeading.textContent =
-                "Motor " +
-                currentMotor;
-
-
-            currentMotorGroup.appendChild(
-                motorHeading
-            );
-
-
-            eventReferenceList.appendChild(
-                currentMotorGroup
-            );
+    // Simultaneous hits always conflict, even before checking WAV durations.
+    for (let i = 1; i < hits.length; i++) {
+        if (hits[i].startTime === hits[i - 1].startTime) {
+            const first = getSampleInstrument(hits[i - 1].sampleID);
+            const second = getSampleInstrument(hits[i].sampleID);
+            return {
+                ok: false,
+                message: `Cannot export: overlapping percussion events at ${hits[i].startTime} ms ` +
+                    `(${first?.name ?? "Unknown"} and ${second?.name ?? "Unknown"}). ` +
+                    `The ESP32 currently plays only one WAV sample at a time. ` +
+                    `Move or delete one of these hits.`
+            };
         }
-
-
-        // ----------------------------------------------------
-        // EVENT ROW
-        // ----------------------------------------------------
-
-        const eventReference =
-            document.createElement(
-                "div"
-            );
-
-
-        eventReference.className =
-            "event-reference";
-
-
-        // Event number
-        const number =
-            document.createElement(
-                "div"
-            );
-
-
-        number.className =
-            "event-number";
-
-
-        number.textContent =
-            eventNumber +
-            ".";
-
-
-        // Event details
-        const details =
-            document.createElement(
-                "div"
-            );
-
-
-        details.className =
-            "event-details";
-
-
-        const noteName =
-            document.createElement(
-                "div"
-            );
-
-
-        noteName.className =
-            "event-note-name";
-
-
-        noteName.textContent =
-            getDisplayNoteName(
-                noteEvent.note
-            );
-
-
-        const start =
-            document.createElement(
-                "div"
-            );
-
-
-        start.textContent =
-            "Start: " +
-            noteEvent.startTime +
-            " ms";
-
-
-        const duration =
-            document.createElement(
-                "div"
-            );
-
-
-        duration.textContent =
-            "Duration: " +
-            noteEvent.noteDuration +
-            " ms";
-
-
-        details.appendChild(
-            noteName
-        );
-
-
-        details.appendChild(
-            start
-        );
-
-
-        details.appendChild(
-            duration
-        );
-
-
-        eventReference.appendChild(
-            number
-        );
-
-
-        eventReference.appendChild(
-            details
-        );
-
-
-        currentMotorGroup.appendChild(
-            eventReference
-        );
-
-
-        eventNumber++;
-    }
-}
-
-
-// ============================================================
-// ADD A NORMAL LINE TO C++ DISPLAY
-// ============================================================
-
-function appendPlainCodeLine(
-    text
-) {
-
-    const line =
-        document.createElement(
-            "div"
-        );
-
-
-    // Preserve intentional blank lines.
-    if (text === "") {
-
-        line.innerHTML =
-            "&nbsp;";
     }
 
-    else {
-
-        line.textContent =
-            text;
-    }
-
-
-    cppCodeOutput.appendChild(
-        line
-    );
-}
-
-
-// ============================================================
-// DISPLAY GENERATED C++
-// ============================================================
-//
-// Unlike generatedCppCode, this version adds visual event
-// numbers beside each NoteEvent line.
-//
-// Those numbers are UI only.
-//
-// ============================================================
-
-function displayCppCode(
-    songName,
-    sortedEvents,
-    songDuration,
-    loopSong
-) {
-
-    cppCodeOutput.innerHTML =
-        "";
-
-
-    appendPlainCodeLine(
-        `NoteEvent ${songName}[] = {`
-    );
-
-
-    let previousMotor =
-        null;
-
-
-    let eventNumber =
-        1;
-
-
-    for (
-        const noteEvent
-        of sortedEvents
-    ) {
-
-        // ----------------------------------------------------
-        // MOTOR GROUP
-        // ----------------------------------------------------
-
-        if (
-            noteEvent.motorNum !==
-            previousMotor
-        ) {
-
-            if (
-                previousMotor !==
-                null
-            ) {
-
-                appendPlainCodeLine(
-                    ""
-                );
+    const durationsMs = new Map();
+    let context;
+    try {
+        context = getAudioContext();
+        for (const hit of hits) {
+            if (durationsMs.has(hit.sampleID)) continue;
+            const instrument = getSampleInstrument(hit.sampleID);
+            if (!instrument) throw new Error(`Unknown sample ID ${hit.sampleID}`);
+            const buffer = await getSampleBuffer(hit.sampleID, context);
+            if (!buffer || !Number.isFinite(buffer.duration) || buffer.duration <= 0) {
+                throw new Error(`Could not determine the duration of ${instrument.name}`);
             }
-
-
-            appendPlainCodeLine(
-                `    // Motor ${noteEvent.motorNum}`
-            );
-
-
-            previousMotor =
-                noteEvent.motorNum;
+            durationsMs.set(hit.sampleID, Math.ceil(buffer.duration * 1000));
         }
-
-
-        // ----------------------------------------------------
-        // NUMBERED EVENT LINE
-        // ----------------------------------------------------
-
-        const line =
-            document.createElement(
-                "div"
-            );
-
-
-        line.className =
-            "cpp-event-line";
-
-
-        const number =
-            document.createElement(
-                "span"
-            );
-
-
-        number.className =
-            "cpp-line-number";
-
-
-        number.textContent =
-            eventNumber +
-            ".";
-
-
-        const code =
-            document.createElement(
-                "span"
-            );
-
-
-        code.className =
-            "cpp-line-code";
-
-
-        code.textContent =
-            `    {${noteEvent.motorNum}, ${noteEvent.note}, ${noteEvent.startTime}, ${noteEvent.noteDuration}, false, false},`;
-
-
-        line.appendChild(
-            number
-        );
-
-
-        line.appendChild(
-            code
-        );
-
-
-        cppCodeOutput.appendChild(
-            line
-        );
-
-
-        eventNumber++;
+    } catch (error) {
+        console.error("Percussion export validation failed:", error);
+        return {
+            ok: false,
+            message: "Cannot export: unable to check percussion overlaps because a WAV " +
+                "file could not be loaded. Check the sample paths and local server. " +
+                `Details: ${error.message}`
+        };
     }
 
+    const timelineEnd = getTimelineLengthMs();
+    for (let i = 0; i < hits.length - 1; i++) {
+        const current = hits[i];
+        const next = hits[i + 1];
+        const currentEnd = Math.min(
+            timelineEnd,
+            current.startTime + durationsMs.get(current.sampleID)
+        );
 
-    appendPlainCodeLine(
-        "};"
-    );
+        if (next.startTime < currentEnd) {
+            const first = getSampleInstrument(current.sampleID).name;
+            const second = getSampleInstrument(next.sampleID).name;
+            return {
+                ok: false,
+                message: `Cannot export: overlapping percussion events. ` +
+                    `${first} starts at ${current.startTime} ms and plays until about ${currentEnd} ms, ` +
+                    `but ${second} starts at ${next.startTime} ms. ` +
+                    `The ESP32 currently plays only one WAV sample at a time. ` +
+                    `Move the second hit later or remove one of the hits.`
+            };
+        }
+    }
 
-
-    appendPlainCodeLine(
-        ""
-    );
-
-
-    appendPlainCodeLine(
-        `const int ${songName}Length =`
-    );
-
-
-    appendPlainCodeLine(
-        `    sizeof(${songName}) / sizeof(${songName}[0]);`
-    );
-
-    appendPlainCodeLine(
-    ""
-    );
-
-
-    appendPlainCodeLine(
-        `const unsigned long ${songName}Duration = ${songDuration};`
-    );
-
-
-    appendPlainCodeLine(
-        ""
-    );
-
-
-    appendPlainCodeLine(
-        `const bool ${songName}Loop = ${loopSong};`
-    );
+    return { ok: true };
 }
-
 
 // ============================================================
 // GENERATE SONG OUTPUT
 // ============================================================
 
-function generateSongOutput() {
-
+async function generateSongOutput() {
     clearMessages();
+    hideGeneratedOutput(); // Never leave old C++ visible/copyable after an invalid export.
 
-
-    copyMessage.textContent =
-        "";
-
-
-    // --------------------------------------------------------
-    // SONG MUST CONTAIN AT LEAST ONE EVENT
-    // --------------------------------------------------------
-
-    if (
-        noteEvents.length === 0
-    ) {
-
-        statusMessage.textContent =
-            "Add at least one note before generating code.";
-
+    if (!noteEvents.length && !sampleEvents.length) {
+        statusMessage.textContent = "Add at least one motor note or percussion hit before generating code.";
+        return;
+    }
+    const timelineName = songNameInput.value.trim();
+    const duration = getTimelineLengthMs();
+    if (!isValidCppIdentifier(timelineName)) {
+        statusMessage.textContent = "Timeline Name must be a valid C++ identifier (letters, numbers, underscores; cannot start with number).";
         return;
     }
 
+    generateCodeButton.disabled = true;
+    try {
+        if (sampleEvents.length >= 2) {
+            statusMessage.textContent = "Checking percussion sample durations for overlaps...";
+            const result = await validatePercussionForExport();
+            if (!result.ok) {
+                statusMessage.textContent = result.message;
+                return; // No C++ output generated.
+            }
+        }
 
-    // --------------------------------------------------------
-    // VALIDATE SONG NAME
-    // --------------------------------------------------------
-
-    const songName = songNameInput.value.trim();
-    const songDuration = Number(timelineLengthInput.value) * 1000;
-    const loopSong = loopSongInput.checked;
-
-    if (
-        !isValidCppIdentifier(
-            songName
-        )
-    ) {
-
-        statusMessage.textContent =
-            "Song Name must be a valid C++ variable name. Use letters, numbers, and underscores, and do not begin with a number.";
-
-        return;
+        statusMessage.textContent = "";
+        const sortedNotes = getSortedEventsForCode();
+        const snippets = generateCppCode(timelineName, sortedNotes, duration);
+        generatedHeaderCode = snippets.headerCode;
+        generatedSourceCode = snippets.sourceCode;
+        generateEventReferenceList(sortedNotes);
+        displayCppCode();
+        generatedOutput.classList.remove("hidden");
+    } finally {
+        generateCodeButton.disabled = false;
     }
-
-
-    // --------------------------------------------------------
-    // SORT COPY
-    // --------------------------------------------------------
-
-    const sortedEvents =
-        getSortedEventsForCode();
-
-
-    // --------------------------------------------------------
-    // CREATE CLEAN COPYABLE C++
-    // --------------------------------------------------------
-
-    generatedCppCode =
-        generateCppCode(
-            songName,
-            sortedEvents,
-            songDuration,
-            loopSong
-        );
-
-
-    // --------------------------------------------------------
-    // CREATE LEFT REFERENCE LIST
-    // --------------------------------------------------------
-
-    generateEventReferenceList(
-        sortedEvents
-    );
-
-
-    // --------------------------------------------------------
-    // CREATE RIGHT C++ DISPLAY
-    // --------------------------------------------------------
-
-    displayCppCode(
-        songName,
-        sortedEvents,
-        songDuration,
-        loopSong
-    );
-
-
-    // --------------------------------------------------------
-    // SHOW OUTPUT
-    // --------------------------------------------------------
-
-    generatedOutput.classList.remove(
-        "hidden"
-    );
 }
 
 
 // ============================================================
-// COPY GENERATED C++
+// COPY ONE PASTE-READY SNIPPET
 // ============================================================
-
-async function copyGeneratedCode() {
-
-    if (!generatedCppCode) {
-
-        copyMessage.textContent =
-            "Generate code first.";
-
+async function copyCodeSnippet(code, messageElement) {
+    if (!code) {
+        messageElement.textContent = "Generate code first.";
         return;
     }
-
-
-    // --------------------------------------------------------
-    // MODERN CLIPBOARD API
-    // --------------------------------------------------------
-
     try {
-
-        await navigator.clipboard.writeText(
-            generatedCppCode
-        );
-
-
-        copyMessage.textContent =
-            "C++ copied to clipboard.";
-
-
+        await navigator.clipboard.writeText(code);
+        messageElement.textContent = "Copied! Paste into your existing file.";
         return;
+    } catch (error) {
+        // Fallback for browsers without clipboard permission.
     }
-
-    catch (error) {
-
-        // file:// pages can sometimes be denied access
-        // to navigator.clipboard depending on browser settings.
-        //
-        // Try a fallback below.
-    }
-
-
-    // --------------------------------------------------------
-    // LOCAL-FILE FALLBACK
-    // --------------------------------------------------------
-
+    const input = document.createElement("textarea");
+    input.value = code;
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    input.focus();
+    input.select();
     try {
-
-        const temporaryTextArea =
-            document.createElement(
-                "textarea"
-            );
-
-
-        temporaryTextArea.value =
-            generatedCppCode;
-
-
-        temporaryTextArea.style.position =
-            "fixed";
-
-
-        temporaryTextArea.style.opacity =
-            "0";
-
-
-        document.body.appendChild(
-            temporaryTextArea
-        );
-
-
-        temporaryTextArea.focus();
-
-        temporaryTextArea.select();
-
-
-        const copySucceeded =
-            document.execCommand(
-                "copy"
-            );
-
-
-        temporaryTextArea.remove();
-
-
-        if (!copySucceeded) {
-
-            throw new Error(
-                "Fallback copy failed."
-            );
-        }
-
-
-        copyMessage.textContent =
-            "C++ copied to clipboard.";
-    }
-
-    catch (error) {
-
-        copyMessage.textContent =
-            "Could not access the clipboard. Select and copy the code manually.";
-
-
-        console.error(
-            "Clipboard error:",
-            error
-        );
+        if (!document.execCommand("copy")) throw new Error("Copy failed");
+        messageElement.textContent = "Copied! Paste into your existing file.";
+    } catch (error) {
+        messageElement.textContent = "Unable to copy automatically. Select the code above and copy it manually.";
+        console.error("Clipboard error:", error);
+    } finally {
+        input.remove();
     }
 }
 
@@ -2970,10 +2492,10 @@ generateCodeButton.addEventListener(
 );
 
 
-copyCodeButton.addEventListener(
-    "click",
-    copyGeneratedCode
-);
+copyHeaderCodeButton.addEventListener("click", () =>
+    copyCodeSnippet(generatedHeaderCode, copyHeaderMessage));
+copySourceCodeButton.addEventListener("click", () =>
+    copyCodeSnippet(generatedSourceCode, copySourceMessage));
 
 
 // ------------------------------------------------------------
@@ -3074,9 +2596,402 @@ document.addEventListener(
             event.preventDefault();
 
             deleteSelectedNote();
+        } else if (selectedSampleEventID !== null) {
+            event.preventDefault();
+            deleteSelectedSample();
         }
     }
 );
+
+
+// ============================================================
+// PERCUSSION EXTENSION + TIMELINE SAVE / LOAD
+// ============================================================
+
+function getSampleInstrument(sampleID) {
+    return SAMPLE_LIBRARY.find(instrument => instrument.id === sampleID);
+}
+
+function findSampleEventByID(eventID) {
+    return sampleEvents.find(hit => hit.id === eventID);
+}
+
+function getSortedSamplesForCode() {
+    // Sort by start time. Simultaneous hits are rejected at C++ export.
+    return [...sampleEvents].sort((a, b) =>
+        a.startTime - b.startTime || a.sampleID - b.sampleID || a.id - b.id
+    );
+}
+
+function isValidSamplePlacement(eventID, sampleID, startTime) {
+    if (!getSampleInstrument(sampleID) || !Number.isInteger(startTime)) return false;
+    if (startTime < 0 || startTime >= getTimelineLengthMs()) return false;
+    // Two hits of the same instrument at exactly the same time are redundant.
+    return !sampleEvents.some(hit =>
+        hit.id !== eventID && hit.sampleID === sampleID && hit.startTime === startTime
+    );
+}
+
+function createPercussionLanes() {
+    percussionLanes.innerHTML = "";
+    const width = Number(timelineLengthInput.value) * PIXELS_PER_SECOND;
+    for (const instrument of SAMPLE_LIBRARY) {
+        const lane = document.createElement("div");
+        lane.className = "percussion-lane";
+        const label = document.createElement("div");
+        label.className = "percussion-label";
+        label.textContent = instrument.name;
+        const track = document.createElement("div");
+        track.className = "percussion-track";
+        track.dataset.sampleId = instrument.id;
+        track.style.width = width + "px";
+        track.addEventListener("click", event => {
+            if (event.target.closest(".percussion-hit")) return;
+            if (isPlaying) stopPreview();
+            const position = event.clientX - track.getBoundingClientRect().left;
+            const startTime = snapTime((position / PIXELS_PER_SECOND) * 1000);
+            if (!isValidSamplePlacement(null, instrument.id, startTime)) {
+                statusMessage.textContent = "That hit would duplicate an existing hit or fall outside the timeline.";
+                return;
+            }
+            const hit = { id: nextSampleEventID++, sampleID: instrument.id, startTime };
+            sampleEvents.push(hit);
+            selectSample(hit.id);
+            hideGeneratedOutput();
+        });
+        lane.append(label, track);
+        percussionLanes.appendChild(lane);
+    }
+    updateTrackGrid();
+    renderSampleHits();
+}
+
+function renderSampleHits() {
+    percussionLanes.querySelectorAll(".percussion-hit").forEach(block => block.remove());
+    for (const hit of sampleEvents) {
+        const track = percussionLanes.querySelector(`.percussion-track[data-sample-id="${hit.sampleID}"]`);
+        if (!track) continue;
+        const block = document.createElement("div");
+        block.className = "percussion-hit";
+        if (hit.id === selectedSampleEventID) block.classList.add("selected-hit");
+        block.dataset.sampleId = hit.sampleID;
+        block.textContent = "●";
+        block.title = `${getSampleInstrument(hit.sampleID).name} at ${hit.startTime} ms`;
+        block.style.left = (hit.startTime / 1000 * PIXELS_PER_SECOND) + "px";
+        // Tiny trigger block, rather than a duration-sized bar.
+        block.style.width = Math.max(16, Math.min(30, getSnapInterval() / 1000 * PIXELS_PER_SECOND)) + "px";
+        block.addEventListener("click", event => {
+            event.stopPropagation();
+            selectSample(hit.id);
+        });
+        block.addEventListener("pointerdown", event => startSampleDragging(event, hit.id));
+        track.appendChild(block);
+    }
+}
+
+function selectSample(eventID) {
+    selectedEventID = null;
+    selectedSampleEventID = eventID;
+    clearMessages();
+    renderNotes();
+    updateEditor();
+    renderSampleHits();
+    updateSampleEditor();
+}
+
+function updateSampleEditor() {
+    const hit = findSampleEventByID(selectedSampleEventID);
+    sampleEditor.classList.toggle("hidden", !hit);
+    if (!hit) return;
+    editSampleSelect.value = String(hit.sampleID);
+    editSampleStartTime.value = hit.startTime;
+    sampleEditorMessage.textContent = "";
+}
+
+function applySampleEditorChanges() {
+    if (isPlaying) stopPreview();
+    const hit = findSampleEventByID(selectedSampleEventID);
+    if (!hit) return;
+    const sampleID = Number(editSampleSelect.value);
+    const rawStart = Number(editSampleStartTime.value);
+    const startTime = snapTime(rawStart);
+    if (!Number.isFinite(rawStart) || !isValidSamplePlacement(hit.id, sampleID, startTime)) {
+        sampleEditorMessage.textContent = "Invalid hit: check instrument, time, duplicates, and timeline length.";
+        return;
+    }
+    hit.sampleID = sampleID;
+    hit.startTime = startTime;
+    selectSample(hit.id);
+    hideGeneratedOutput();
+}
+
+function deleteSelectedSample() {
+    if (isPlaying) stopPreview();
+    const index = sampleEvents.findIndex(hit => hit.id === selectedSampleEventID);
+    if (index < 0) return;
+    sampleEvents.splice(index, 1);
+    selectedSampleEventID = null;
+    renderSampleHits();
+    updateSampleEditor();
+    clearMessages();
+    hideGeneratedOutput();
+}
+
+function startSampleDragging(event, eventID) {
+    if (isPlaying) stopPreview();
+    event.preventDefault();
+    const hit = findSampleEventByID(eventID);
+    if (!hit) return;
+    selectSample(eventID);
+    sampleInteraction = {
+        eventID, startPointerX: event.clientX, originalStartTime: hit.startTime
+    };
+    document.addEventListener("pointermove", moveSampleDrag);
+    document.addEventListener("pointerup", finishSampleDrag);
+    document.addEventListener("pointercancel", finishSampleDrag);
+}
+
+function moveSampleDrag(event) {
+    if (!sampleInteraction) return;
+    const hit = findSampleEventByID(sampleInteraction.eventID);
+    if (!hit) return;
+    const deltaMs = (event.clientX - sampleInteraction.startPointerX) / PIXELS_PER_SECOND * 1000;
+    const proposed = snapTime(sampleInteraction.originalStartTime + deltaMs);
+    if (isValidSamplePlacement(hit.id, hit.sampleID, proposed)) {
+        hit.startTime = proposed;
+        renderSampleHits();
+        updateSampleEditor();
+        hideGeneratedOutput();
+    }
+}
+
+function finishSampleDrag() {
+    sampleInteraction = null;
+    document.removeEventListener("pointermove", moveSampleDrag);
+    document.removeEventListener("pointerup", finishSampleDrag);
+    document.removeEventListener("pointercancel", finishSampleDrag);
+}
+
+async function getSampleBuffer(sampleID, context) {
+    const instrument = getSampleInstrument(sampleID);
+    if (!instrument) return null;
+
+    // Reuse already-decoded audio for subsequent previews.
+    const cached = decodedSampleCache.get(sampleID);
+    if (cached?.path === instrument.file) return cached.buffer;
+
+    // fetch() reads relative URLs from the sequencer's own folder, not LittleFS.
+    // Browsers typically block fetch() when index.html is opened as file://,
+    // so run this folder through a local HTTP server (see README.md).
+    const response = await fetch(instrument.file);
+    if (!response.ok) {
+        throw new Error(`${instrument.file}: HTTP ${response.status}`);
+    }
+    const bytes = await response.arrayBuffer();
+    const buffer = await context.decodeAudioData(bytes);
+    decodedSampleCache.set(sampleID, { path: instrument.file, buffer });
+    return buffer;
+}
+
+function scheduleSamplePreview(context, buffers) {
+    activeSampleNodes = [];
+    const ordered = getSortedSamplesForCode();
+    const timelineEnd = playbackStartTime + getTimelineLengthMs() / 1000;
+    for (let i = 0; i < ordered.length; i++) {
+        const hit = ordered[i];
+        const buffer = buffers.get(hit.sampleID);
+        if (!buffer) continue;
+        const begin = playbackStartTime + hit.startTime / 1000;
+        // Even a hit whose file is missing interrupts the current sample on
+        // the ESP32, so look at ALL upcoming events, not only decoded buffers.
+        const nextHit = ordered[i + 1];
+        const nextStart = nextHit ? playbackStartTime + nextHit.startTime / 1000 : timelineEnd;
+        const end = Math.min(begin + buffer.duration, nextStart, timelineEnd);
+        if (end <= begin) continue; // simultaneous earlier hit: later one wins
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+        source.buffer = buffer;
+        gain.gain.value = 0.6;
+        source.connect(gain);
+        gain.connect(context.destination);
+        source.start(begin);
+        source.stop(end);
+        activeSampleNodes.push(source);
+    }
+}
+
+function setupSampleLibrary() {
+    const list = document.getElementById("sampleFileGrid");
+    for (const instrument of SAMPLE_LIBRARY) {
+        const option = document.createElement("option");
+        option.value = String(instrument.id);
+        option.textContent = instrument.name;
+        editSampleSelect.appendChild(option);
+
+        // Display the configured path; there are no WAV upload controls.
+        const entry = document.createElement("div");
+        entry.className = "sample-file-entry";
+        const name = document.createElement("strong");
+        name.textContent = instrument.name;
+        const path = document.createElement("span");
+        path.className = "sample-path";
+        path.textContent = `ID ${instrument.id} · ${instrument.file}`;
+        entry.append(name, path);
+        list.appendChild(entry);
+    }
+    document.getElementById("applySampleEditButton").addEventListener("click", applySampleEditorChanges);
+    document.getElementById("deleteSampleButton").addEventListener("click", deleteSelectedSample);
+}
+
+function hideGeneratedOutput() {
+    generatedHeaderCode = "";
+    generatedSourceCode = "";
+    headerCodeOutput.textContent = "";
+    sourceCodeOutput.textContent = "";
+    generatedOutput.classList.add("hidden");
+    copyHeaderMessage.textContent = "";
+    copySourceMessage.textContent = "";
+}
+
+// The JSON is intentionally small, readable, and free of binary WAV data.
+function getTimelineProject() {
+    return {
+        format: "ece3-sound-production-timeline", version: 1,
+        name: songNameInput.value.trim(),
+        motorCount: Number(motorCountInput.value),
+        timelineLengthSeconds: Number(timelineLengthInput.value),
+        snapIntervalMs: getSnapInterval(),
+        loop: loopSongInput.checked,
+        notes: noteEvents.map(note => ({
+            motorNum: note.motorNum, note: note.note,
+            startTime: note.startTime, noteDuration: note.noteDuration
+        })),
+        samples: sampleEvents.map(hit => ({ sampleID: hit.sampleID, startTime: hit.startTime }))
+    };
+}
+
+function saveTimelineProject() {
+    const project = getTimelineProject();
+    const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+    const objectURL = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectURL;
+    const safeName = project.name.replace(/[^A-Za-z0-9_-]/g, "_") || "timeline";
+    anchor.download = safeName + ".json";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    // Defer cleanup until the browser has started the download.
+    setTimeout(() => URL.revokeObjectURL(objectURL), 1000);
+    statusMessage.textContent = "Timeline project saved. WAV files are not embedded in JSON.";
+}
+
+function loadTimelineProject(project) {
+    if (!project || project.format !== "ece3-sound-production-timeline" || project.version !== 1 ||
+        !Array.isArray(project.notes) || !Array.isArray(project.samples)) {
+        throw new Error("Not an ECE3 timeline JSON file (version 1).");
+    }
+    const motorCount = Number(project.motorCount);
+    const seconds = Number(project.timelineLengthSeconds);
+    const snap = Number(project.snapIntervalMs);
+    if (!Number.isInteger(motorCount) || motorCount < 1 || motorCount > 6 ||
+        !Number.isInteger(seconds) || seconds < 1 || seconds > 60 ||
+        !Number.isInteger(snap) || snap < 1 || !isValidCppIdentifier(String(project.name))) {
+        throw new Error("Timeline settings are invalid.");
+    }
+    const lengthMs = seconds * 1000;
+    const notes = project.notes.map((raw, index) => {
+        const note = { id: index + 1, motorNum: raw.motorNum, note: raw.note,
+            startTime: raw.startTime, noteDuration: raw.noteDuration };
+        if (!Number.isInteger(note.motorNum) || note.motorNum < 1 || note.motorNum > motorCount ||
+            !Object.hasOwn(NOTE_FREQUENCIES, note.note) ||
+            !Number.isInteger(note.startTime) || note.startTime < 0 ||
+            !Number.isInteger(note.noteDuration) || note.noteDuration <= 0 ||
+            note.startTime + note.noteDuration > lengthMs) {
+            throw new Error("Invalid motor note at index " + index + ".");
+        }
+        return note;
+    });
+    for (let i = 0; i < notes.length; i++) {
+        for (let j = i + 1; j < notes.length; j++) {
+            if (notes[i].motorNum === notes[j].motorNum &&
+                notes[i].startTime < notes[j].startTime + notes[j].noteDuration &&
+                notes[j].startTime < notes[i].startTime + notes[i].noteDuration) {
+                throw new Error("Overlapping notes on motor " + notes[i].motorNum + ".");
+            }
+        }
+    }
+    const samples = project.samples.map((raw, index) => {
+        const hit = { id: index + 1, sampleID: raw.sampleID, startTime: raw.startTime };
+        if (!getSampleInstrument(hit.sampleID) || !Number.isInteger(hit.startTime) ||
+            hit.startTime < 0 || hit.startTime >= lengthMs) {
+            throw new Error("Invalid percussion hit at index " + index + ".");
+        }
+        return hit;
+    });
+    const seen = new Set();
+    for (const hit of samples) {
+        const key = hit.sampleID + ":" + hit.startTime;
+        if (seen.has(key)) throw new Error("Duplicate percussion hits at " + hit.startTime + " ms.");
+        seen.add(key);
+    }
+    if (isPlaying) stopPreview();
+    songNameInput.value = project.name;
+    motorCountInput.value = motorCount;
+    timelineLengthInput.value = seconds;
+    snapIntervalInput.value = snap;
+    loopSongInput.checked = Boolean(project.loop);
+    noteEvents.splice(0, noteEvents.length, ...notes);
+    sampleEvents.splice(0, sampleEvents.length, ...samples);
+    nextEventID = notes.length + 1;
+    nextSampleEventID = samples.length + 1;
+    selectedEventID = null;
+    selectedSampleEventID = null;
+    createMotorLanes();
+    createPercussionLanes();
+    createTimelineRuler();
+    updateEditor();
+    updateSampleEditor();
+    updateTimeDisplay();
+    hideGeneratedOutput();
+    statusMessage.textContent = `Loaded ${project.name}: ${notes.length} motor notes, ${samples.length} percussion hits. Browser WAVs use the fixed paths in script.js.`;
+}
+
+function newTimelineProject() {
+    if ((noteEvents.length || sampleEvents.length) &&
+        !window.confirm("Start a new timeline? Save the current one to JSON first if you want to keep it.")) return;
+    stopPreview();
+    noteEvents.splice(0);
+    sampleEvents.splice(0);
+    nextEventID = 1;
+    nextSampleEventID = 1;
+    selectedEventID = null;
+    selectedSampleEventID = null;
+    songNameInput.value = "newTimeline";
+    createMotorLanes();
+    createPercussionLanes();
+    updateEditor();
+    updateSampleEditor();
+    hideGeneratedOutput();
+    statusMessage.textContent = "New empty timeline. Sample paths are configured in script.js.";
+}
+
+function setupTimelineFileButtons() {
+    document.getElementById("newTimelineButton").addEventListener("click", newTimelineProject);
+    document.getElementById("saveTimelineButton").addEventListener("click", saveTimelineProject);
+    document.getElementById("loadTimelineInput").addEventListener("change", async function () {
+        const file = this.files?.[0];
+        if (!file) return;
+        try {
+            const project = JSON.parse(await file.text());
+            loadTimelineProject(project);
+        } catch (error) {
+            statusMessage.textContent = "Could not load timeline: " + error.message;
+        } finally {
+            this.value = ""; // allows reloading the same JSON
+        }
+    });
+}
 
 
 // ============================================================
@@ -3084,9 +2999,12 @@ document.addEventListener(
 // ============================================================
 
 createMotorLanes();
-
+createPercussionLanes();
 createTimelineRuler();
-
 updateTimeDisplay();
-
 updateEditor();
+updateSampleEditor();
+setupSampleLibrary();
+setupTimelineFileButtons();
+songNameInput.addEventListener("input", hideGeneratedOutput);
+loopSongInput.addEventListener("change", hideGeneratedOutput);
