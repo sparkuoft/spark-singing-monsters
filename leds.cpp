@@ -1,5 +1,5 @@
 #include "leds.h"
-//#include "xxx.h"
+#include "tracks.h"
 #include <FastLED.h>
 
 static Track tracks[NUM_TRACKS];
@@ -15,7 +15,7 @@ void leds_init() {
 void leds_loop() {
   FastLED.clear();
 
-  // TODO: Update tracks with calls to controller functions
+  track_queue_pop(tracks);
 
   for (int i = 0; i < NUM_TRACKS; i++) {
     CRGB button_colour, cursor_colour;
