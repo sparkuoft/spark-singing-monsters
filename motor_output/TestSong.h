@@ -31,4 +31,12 @@
   extern const bool melody1Loop;
   extern bool melody1Done;
 
+  // arppegio
+
+  extern NoteEvent arppegio[];
+  extern const int arppegioLength;
+  extern const unsigned long arppegioDuration;
+  extern const bool arppegioLoop;
+  extern bool arppegioDone;
+
 #endif

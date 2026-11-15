@@ -1,6 +1,7 @@
 #include "Motor.h"
 #include "Sequencer.h"
 #include "TestSong.h"
+#include "SpeakerAudio.h"
 #include "Notes.h"
 
 // pin I2S assignment & motor setup
@@ -17,6 +18,7 @@ const int stepsPerRevolution = 200;                      // 200 steps for 360 de
 #define NUM_OF_MOTORS 3
 Motor motors[3];                                         // 3 motors, can scale up
 bool songStarted = false;
+const bool TEST_SAMPLES_ONLY = true;
 
 void setup() {
 
@@ -28,9 +30,12 @@ void setup() {
     initMotor(motors[motorNum], motorNum + 1, stpPin[motorNum], dirPin[motorNum]);
   }
 
-  // // set beginning of song as t = 0;
-  // startSequencer(); 
+  
+  bool audioReady = beginSpeakerAudio(i2sBclkPin, i2sLrcPin, i2sDataPin);
 
+  if (!audioReady) {
+      Serial.println("Speaker setup failed.");
+  }
 }
 
 void loop() {
@@ -41,35 +46,59 @@ void loop() {
     if (Serial.available() > 0) {
       char command = Serial.read();
 
-      if (command == 'p' && chords1Done) {
+      // Play one of the three percussion samples
+      if (command >= '1' && command <= '3') {
+        if (!playSample(command - '0')) {
+          Serial.println("Sample request failed.");
+        }
+      }
+
+      // Stop the currently playing sample
+      else if (command == '0') {
+        stopSample();
+      }
+
+      // Restart the motor song once it finishes
+      else if (command == 'p' && arppegioDone) {
         songStarted = false;
-        chords1Done = false;
+        arppegioDone = false;
       }
     }
 
-    // Start sequencer - run once for each playback
+  // run the motor sequencer (optional during testing)
 
-    if (!songStarted && !chords1Done) {
-      
-      for (int i = 0; i < chords1Length; i++) {
-        chords1[i].started = false;
-        chords1[i].finished = false;
+  if (!TEST_SAMPLES_ONLY) {
+
+    // Start sequencer once for each playback session
+    if (!songStarted && !arppegioDone) {
+
+      for (int i = 0; i < arppegioLength; i++) {
+        arppegio[i].started = false;
+        arppegio[i].finished = false;
       }
 
       startSequencer();
       songStarted = true;
     }
 
-    // PLAY:
-    if (songStarted && !chords1Done) {
-      updateSequencer (chords1, chords1Length, motors, chords1Duration, chords1Loop, chords1Done);
+    // Update the song's note events
+    if (songStarted && !arppegioDone) {
+      updateSequencer(
+        arppegio,
+        arppegioLength,
+        motors,
+        arppegioDuration,
+        arppegioLoop,
+        arppegioDone
+      );
     }
+  }
 
-    // always updated the motor step signals:
+  // always update motor STEP signals
 
-    for (int i = 0; i < NUM_OF_MOTORS; i++) {
-      updateMotor(motors[i]);
-    }
+  for (int i = 0; i < NUM_OF_MOTORS; i++) {
+    updateMotor(motors[i]);
+  }
 
-    // other non-blocking tasks can run here
+  // Other non-blocking tasks can run here
 }

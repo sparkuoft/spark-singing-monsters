@@ -156,3 +156,53 @@
 
         bool melody1Done = false;
 
+    // arppegio
+
+        NoteEvent arppegio[] = {
+            // Motor 1
+            {1, C4, 0, 400, false, false},
+            {1, E4, 500, 400, false, false},
+            {1, E4, 1000, 400, false, false},
+            {1, G4, 1500, 400, false, false},
+            {1, E4, 2000, 400, false, false},
+            {1, E4, 2500, 400, false, false},
+            {1, C4, 3000, 400, false, false},
+            {1, E4, 3500, 400, false, false},
+            {1, E4, 4000, 400, false, false},
+            {1, G4, 4500, 900, false, false},
+            {1, F4, 5500, 400, false, false},
+            {1, D4, 6000, 400, false, false},
+            {1, F4, 6500, 400, false, false},
+            {1, F4, 7000, 400, false, false},
+            {1, A4, 7500, 400, false, false},
+            {1, F4, 8000, 400, false, false},
+            {1, F4, 8500, 400, false, false},
+            {1, D4, 9000, 400, false, false},
+            {1, F4, 9500, 400, false, false},
+            {1, F4, 10000, 400, false, false},
+            {1, A4, 10500, 900, false, false},
+            {1, G4, 11500, 400, false, false},
+
+            // Motor 2
+            {2, E4, 0, 4500, false, false},
+            {2, C4, 4500, 1000, false, false},
+            {2, F4, 5500, 5000, false, false},
+            {2, D4, 10500, 900, false, false},
+
+            // Motor 3
+            {3, C5, 0, 5500, false, false},
+            {3, D5, 5500, 5000, false, false},
+            {3, F4, 10500, 900, false, false},
+        };
+
+        const int arppegioLength =
+            sizeof(arppegio) / sizeof(arppegio[0]);
+
+        const unsigned long arppegioDuration = 12000;
+
+        const bool arppegioLoop = true;
+
+        // const bool arppegioLoop = true;
+        
+        bool arppegioDone = false;     // Add this line
+
