@@ -15,12 +15,12 @@ typedef enum {
 // ----- Structs -----
 
 typedef struct {
-  uint8_t id;  // Needed?
-  InstrumentType instrument;
-  TrackState state;
-  uint8_t volume;
-  uint8_t trackCurrentTime;
-  uint8_t trackEndTime;
+    uint8_t id;  // Needed?
+    InstrumentType instrument;
+    TrackState state;
+    uint8_t volume;
+    uint8_t trackCurrentTime;
+    uint8_t trackEndTime;
   // Information about recording and cursor position?
 } Track;
 
