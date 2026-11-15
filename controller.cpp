@@ -12,12 +12,14 @@ static uint32_t last_tick_ms;  // Used for sleeping
 
 void volume_encoder(Mode mode, Event current_event, Track tracks[]) {
   Serial.printf("Event (in encoder rec func) 0: type %d, id %u, value %d\n",
-                    current_event.type, current_event.id, current_event.value);
+                current_event.type, current_event.id, current_event.value);
   // print encoder soemthing (number)
 }
 
 Mode mode_recording(Mode mode, Event current_event, Track tracks[]) {
+  int TrackID = current_event.id;
   if (current_event.type == EVT_BUTTON_PRESSED) {  // check id of value
+    // check instrument type: change state of that instrument to recording
     if (current_event.id == 0) {
       Serial.printf("Event (in mode rec func) 0: type %d, id %u, value %d\n",
                     current_event.type, current_event.id, current_event.value);
@@ -31,15 +33,21 @@ Mode mode_recording(Mode mode, Event current_event, Track tracks[]) {
                     current_event.type, current_event.id, current_event.value);
     }
 
+    tracks[TrackID].state = TRACK_RECORDING;
+    track_queue_overwrite(tracks);
     mode = MODE_RECORD;  // when event is changed, update tracks array
     Serial.printf("Mode (in mode rec func): Recording\n");
   }
 
   else if (current_event.type == EVT_MODE_CHANGED) {
+    tracks[TrackID].state = TRACK_PLAYING;
+    track_queue_overwrite(tracks);
     mode = MODE_PLAYBACK;
     Serial.printf("Mode (in func): Switching to Playing due to Button Press\n");
 
   } else if (current_event.type == EVT_MIC_TIMEOUT) {
+    tracks[TrackID].state = TRACK_PLAYING;
+    track_queue_overwrite(tracks);
     mode = MODE_PLAYBACK;
     Serial.printf("Mode (in func): Switching to Playing due to MIC TIMEOUT\n");
   }
@@ -48,12 +56,17 @@ Mode mode_recording(Mode mode, Event current_event, Track tracks[]) {
 }
 
 Mode mode_playing(Mode mode, Event current_event, Track tracks[]) {
+  int TrackID = current_event.id;
   if (current_event.type == EVT_BUTTON_PRESSED) {
+    tracks[TrackID].state = TRACK_PLAYING;
+    track_queue_overwrite(tracks);
     mode = MODE_PLAYBACK;
     Serial.printf("Mode (in func): Playing\n");
   }
 
   else if (current_event.type == EVT_MODE_CHANGED) {
+    tracks[TrackID].state = TRACK_RECORDING;
+    track_queue_overwrite(tracks);
     mode = MODE_RECORD;
     Serial.printf("Mode (in func): Switching to Recording\n");
   }
