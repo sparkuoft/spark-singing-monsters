@@ -1,8 +1,9 @@
-# Integration Notes
-Subteams should group functionality into separate files, such that they run on setup/loop
+# Expectations for subteam tasks
 
-The init()/loop() should be the actual hardware manipulation
+Each tasks needs a init() and loop(), one subteam can have multiple tasks
 
-Call event_queue_push(...) to tell game FSM something
+The init() must not depend on other tasks
 
-Need more queues to talk to peripherals? Need to figure out
+To signal events from peripheral task to controller task create an Event object and call event_queue_push()
+
+If task requires information from controller it should expose its own static QueueHandle_t and functions

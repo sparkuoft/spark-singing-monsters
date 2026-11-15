@@ -19,9 +19,10 @@
 #define PIN_BUTTON_TRACK_2 11
 #define PIN_BUTTON_TRACK_3 12
 #define PIN_BUTTON_TRACK_4 13
-#define PIN_ENCODER_A 3
-#define PIN_ENCODER_B 46
-#define PIN_ENCODER_BUTTON 16
+#define PIN_ENCODER_A 8
+#define PIN_ENCODER_B 18
+#define PIN_ENCODER_BUTTON 17
+#define PIN_BUTTON_PERCUSSION 14
 // etc.
 
 // ----- Enums ------
