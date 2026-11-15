@@ -36,23 +36,4 @@ typedef enum {
 
 typedef enum { MODE_RECORD, MODE_PLAYBACK, MODE_SD_OCCUPIED } Mode;
 
-typedef enum {
-  TRACK_EMPTY,      // Off
-  TRACK_RECORDING,  // Blue
-  TRACK_PLAYING,    // Green
-  TRACK_MUTED       // Red
-} TrackState;
-
-// ----- Structs -----
-
-typedef struct {
-  uint8_t id;  // Needed?
-  InstrumentType instrument;
-  TrackState state;
-  uint8_t volume;
-  uint8_t trackCurrentTime;
-  uint8_t trackEndTime;
-  // Information about recording and cursor position?
-} Track;
-
 #endif  // CONFIG_H
