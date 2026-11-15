@@ -2,6 +2,8 @@
 
 #define SPEAKER_AUDIO_H
 
+#include <Arduino.h>
+
 // initialize speaker hardware 
 bool beginSpeakerAudio(int bclkPin, int lrcPin, int dataPin);
 

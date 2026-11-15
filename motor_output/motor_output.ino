@@ -17,27 +17,20 @@ const int stepsPerRevolution = 200;                      // 200 steps for 360 de
 // motor output defines:
 #define NUM_OF_MOTORS 3
 Motor motors[NUM_OF_MOTORS];                                         // 3 motors, can scale up
-const bool TEST_SAMPLES_ONLY = false;                    // false enables motor playlist, always false for regular tests (REMOVE PARAM)
 
 // ------------------------------------------------------------------------------------------------------------------------------------------
 // each entry describes one song. NoteEvent arrays stay in TestSong.cpp (THIS WILL BE REMOVED WHEN ECE2/ECE1 INPUTS + TIMELINE ARE INTEGRATED)
-struct Song {
-  const char* name;
-  NoteEvent* events;
-  int numEvents;
-  unsigned long duration;
+
+const Timeline playlist[] = {
+  arpeggioTimeline,
+  melody1Timeline
 };
 
-const Song playlist[] = {
-  {"arppegio", arppegio, arppegioLength, arppegioDuration},
-  {"melody1", melody1, melody1Length, melody1Duration}
-};
+const int PLAYLIST_COUNT = sizeof(playlist) / sizeof(playlist[0]);
 
-const int PLAYLIST_LENGTH = sizeof(playlist) / sizeof(playlist[0]);
-
-int currentSongIndex = 0;
-bool songStarted = false;
-bool currentSongDone = false;
+int currentTimelineIndex = 0;
+bool timelineStarted = false;
+bool timelineDone = false;
 bool playlistDone = false;
 
 void stopAllMotors() {
@@ -46,112 +39,90 @@ void stopAllMotors() {
   }
 }
 
-void startCurrentSong() {
-  const Song &song = playlist[currentSongIndex];
+void startCurrentTimeline() {
+  const Timeline &timeline = playlist[currentTimelineIndex];
 
   stopAllMotors();
+  stopSample();
 
-  // previously played arrays must have their event flags cleared for replay
-  for (int i = 0; i < song.numEvents; i++) {
-    song.events[i].started = false;
-    song.events[i].finished = false;
-  }
+  timelineDone = false;
 
-  currentSongDone = false;
-
-  // log while motors are stopped, before starting this song's clock
-  Serial.print("Starting song ");
-  Serial.print(currentSongIndex + 1);
+  // Log while motors are stopped, before starting this song's clock.
+  Serial.print("Starting timeline ");
+  Serial.print(currentTimelineIndex + 1);
   Serial.print("/");
-  Serial.print(PLAYLIST_LENGTH);
+  Serial.print(PLAYLIST_COUNT);
   Serial.print(": ");
-  Serial.println(song.name);
+  Serial.println(timeline.name);
 
-  startSequencer();
-  songStarted = true;
+  startSequencer(timeline);                                  // Reset both tracks and start at zero
+  timelineStarted = true;
 }
 // ------------------------------------------------------------------------------------------------------------------------------------------
 
 void setup() {
 
   Serial.begin(9600);
-  Serial.println("********************************");
+  Serial.println("******************************************************************");
 
   // initialize all motors
   for (int motorNum = 0; motorNum < NUM_OF_MOTORS; motorNum++) {
     initMotor(motors[motorNum], motorNum + 1, stpPin[motorNum], dirPin[motorNum]);
   }
 
+  
   bool audioReady = beginSpeakerAudio(i2sBclkPin, i2sLrcPin, i2sDataPin);
 
   if (!audioReady) {
       Serial.println("Speaker setup failed. Motor playback can still run.");
   }
 
-  Serial.println("1/2/3: play percussion | 0: stop sample");
+  Serial.println("Motors and percussion will play together automatically.");
+  Serial.println("Press p after the playlist finishes to replay both songs.");
 
-  if (TEST_SAMPLES_ONLY) {
-    Serial.println("Sample testing only. Motor playlist is disabled.");
-  } else {
-    Serial.println("Motor playlist will play once. Press p after it finishes to replay.");
-  }
 }
 
 void loop() {
 
-    // sends 'p' after the song finishes the play it again
+    // Send 'p' after the entire playlist finishes to play both songs again.
     // Serial.read only runs when a character is already available
 
     if (Serial.available() > 0) {
       char command = Serial.read();
 
-      // Play one of the three percussion samples
-      if (command >= '1' && command <= '3') {
-        if (!playSample(command - '0')) {
-          Serial.println("Sample request failed.");
-        }
-      }
-
-      // Stop the currently playing sample
-      else if (command == '0') {
-        stopSample();
-      }
-
-      // the next loop update starts again with the first playlist entry
-      else if (command == 'p' && playlistDone && !TEST_SAMPLES_ONLY) {
-        currentSongIndex = 0;
-        songStarted = false;
-        currentSongDone = false;
+      // The next loop update starts again with the first playlist entry.
+      if (command == 'p' && playlistDone) {
+        currentTimelineIndex = 0;
+        timelineStarted = false;
+        timelineDone = false;
         playlistDone = false;
       }
     }
 
-  // run the motor sequencer (optional during testing)
+  // Run both event arrays against one shared clock.
 
-  if (!TEST_SAMPLES_ONLY && !playlistDone) {
+  if (!playlistDone) {
 
-    if (!songStarted) {
-      startCurrentSong();
+    if (!timelineStarted) {
+      startCurrentTimeline();
     }
 
-    const Song &song = playlist[currentSongIndex];
+    const Timeline &timeline = playlist[currentTimelineIndex];
 
     updateSequencer(
-      song.events,
-      song.numEvents,
+      timeline,
       motors,
-      song.duration,
-      false,                                            // Each song plays ONCE in this playlist
-      currentSongDone
+      NUM_OF_MOTORS,
+      false,                   // Play this timeline once before advancing.
+      timelineDone
     );
 
-    if (currentSongDone) {
-      // Clear any remaining note before switching songs or stopping playback.
-      stopAllMotors();
-      currentSongIndex++;
-      songStarted = false;
+    if (timelineDone) {
+      // The sequencer has already stopped both outputs at the song boundary.
+      currentTimelineIndex++;
+      timelineStarted = false;
 
-      if (currentSongIndex >= PLAYLIST_LENGTH) {
+      if (currentTimelineIndex >= PLAYLIST_COUNT) {
         playlistDone = true;
         Serial.println("Playlist finished. Press p to replay both songs.");
       }
@@ -167,4 +138,5 @@ void loop() {
   }
 
   // Other non-blocking tasks can run here
+
 }

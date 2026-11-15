@@ -298,7 +298,7 @@ bool beginSpeakerAudio(int bclkPin, int lrcPin, int dataPin) {
     return false;
   }
 
-  Serial.println("Speaker ready. Press 1, 2, or 3 to play samples.");
+  Serial.println("Speaker ready for sequenced percussion.");
   return true;
 }
 
