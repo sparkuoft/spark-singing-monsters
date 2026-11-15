@@ -26,5 +26,6 @@ typedef struct {
 
 void track_queue_init();
 bool track_queue_overwrite(Track *track);
+bool track_queue_peek(Track *track);
 
 #endif  // TRACKS_H

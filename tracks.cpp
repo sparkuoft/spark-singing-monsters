@@ -16,3 +16,11 @@ bool track_queue_overwrite(Track *track) {
 
   return xQueueOverwrite(track_queue, track) == pdTRUE;
 }
+
+bool track_queue_peek(Track *track) {
+  if (track_queue == NULL) {
+    return false;
+  }
+
+  return xQueuePeek(track_queue, track) == pdTRUE;
+}
