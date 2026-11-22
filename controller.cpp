@@ -32,6 +32,29 @@ Mode mode_recording(Mode mode, Event current_event, Track tracks[]) {
       Serial.printf("Event (in mode rec func) 2: type %d, id %u, value %d\n",
                     current_event.type, current_event.id, current_event.value);
     }
+    // first check if track is currently recording:
+    // if button just pressed to start recording:
+    // first check if any other tracks are recording, if anything else is
+    // recording: OLED Statement 6: Serial.printf("You cannot record 2 tracks at
+    // once, finish the first track before you record another\n");
+
+    // check here if the button is for percussion:
+    // if percussion -> check first if its a drum or cymbal
+    // OLED Statement 3
+    // Serial.printf("Press \"make sound\" button to lock in a *drum/cymbal*
+    // hit");
+
+    // if not percussion -> check first if its a piano or violin
+    // OLED Statement 4
+    // Serial.printf("Start singing immediately into the mic: will be translated
+    // to *piano/violin*\n");
+
+    // if button just pressed to stop recording:
+    // first check which instrument:
+    // OLED Statement 5
+    // Serial.printf("*drum/cymbal/piano/violin track recorded. Press 1 of 4
+    // buttons to select instrument or flip to playback mode to "make" an
+    // instrument\n");
 
     tracks[TrackID].state = TRACK_RECORDING;
     track_queue_overwrite(tracks);
@@ -45,12 +68,18 @@ Mode mode_recording(Mode mode, Event current_event, Track tracks[]) {
     mode = MODE_PLAYBACK;
     Serial.printf("Mode (in func): Switching to Playing due to Button Press\n");
 
+    // OLED Statement 7
+    // Serial.printf("Playback mode ON. Press 1 of 4 buttons to mute/unmute an
+    // instrument or flip to record mode on instrument\n");
+
   } else if (current_event.type == EVT_MIC_TIMEOUT) {
     tracks[TrackID].state = TRACK_PLAYING;
     track_queue_overwrite(tracks);
     mode = MODE_PLAYBACK;
     Serial.printf("Mode (in func): Switching to Playing due to MIC TIMEOUT\n");
   }
+  // OLED Statement 10
+  // Serial.printf("Mic timeout duration reached. Recording stopped.");
 
   return mode;
 }
@@ -62,6 +91,17 @@ Mode mode_playing(Mode mode, Event current_event, Track tracks[]) {
     track_queue_overwrite(tracks);
     mode = MODE_PLAYBACK;
     Serial.printf("Mode (in func): Playing\n");
+    // check instrument and check if track is playing and is now being switched
+    // to mute mode: OLED Statement 8 Serial.printf("*drums/cymbal/violin/piano*
+    // muted. Press 1 of 4 buttons to mute/unmute an instrument, or flip to
+    // record mode to record an instrument\n");
+
+    // if currently muted and button pressed to unmute:
+    // check instrument
+    // OLED Statement 9
+    // Serial.printf("*drums/piano/cymbal/violin* unmuted. Press 1 of 4 buttons
+    // to mute/unmute an instrument, or flip to record mode to record an
+    // instrument\n");
   }
 
   else if (current_event.type == EVT_MODE_CHANGED) {
@@ -69,6 +109,11 @@ Mode mode_playing(Mode mode, Event current_event, Track tracks[]) {
     track_queue_overwrite(tracks);
     mode = MODE_RECORD;
     Serial.printf("Mode (in func): Switching to Recording\n");
+
+    // when mode initially flipped to recording to start
+    // OLED Statement 2
+    // Serial.printf("Record mode ON Press 1 of 4 buttons to select instrument,
+    // or flip to playback mode to "mute" an instrument\n");
   }
 
   return mode;
@@ -90,6 +135,12 @@ void controller_debug() {
   while (event_queue_pop(&e)) {
     Serial.printf("Event: type %d, id %u, value %d\n", e.type, e.id, e.value);
     // begin
+
+    // check here for game timeout... it should be the first check w/ id 70
+    //  if timeout or reset button and the current mode is not already recording
+    //  OLED Statement 1
+    //  Serial.printf("Flip to record mode to begin recording your song\n");
+
     if (e.type == EVT_ENCODER) {
       volume_encoder(current_mode, e, tracks);
       Serial.printf("Volume_Encoder\n");
