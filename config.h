@@ -8,8 +8,11 @@
 
 #define NUM_TRACKS 4
 #define ENCODER_MAX_COUNT 1000
-#define ENCODER_FILTER 10000  // in ns
-#define DEBOUNCE_COUNT 5
+#define ENCODER_FILTER 10000 // in ns
+#define DEBOUNCE_COUNT 5 
+#define LED_BRIGHTNESS 64
+#define LEDS_PER_TRACK 11 // 1 button led + 10 cursor leds
+#define NUM_LEDS 44 // 4 tracks * LEDS_PER_TRACK
 #define TIMEOUT_DURATION 3000000000  // in ns = 30 s
 
 // ----- Pin mappings -----
@@ -24,6 +27,7 @@
 #define PIN_ENCODER_BUTTON 17
 #define PIN_BUTTON_PERCUSSION 14
 #define PIN_BUTTON_RESET 15
+#define PIN_LED_TRACK 16
 // etc.
 
 // ----- Enums ------
