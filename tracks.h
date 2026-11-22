@@ -3,8 +3,6 @@
 
 #include "config.h"
 
-#define TRACK_QUEUE_SIZE 4  // since there are 4 instrumental tracks
-
 typedef enum {
   TRACK_EMPTY,      // Off
   TRACK_RECORDING,  // Blue

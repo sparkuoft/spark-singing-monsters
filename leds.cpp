@@ -15,7 +15,7 @@ void leds_init() {
 void leds_loop() {
   FastLED.clear();
 
-  track_queue_pop(tracks);
+  track_queue_peek(tracks);
 
   for (int i = 0; i < NUM_TRACKS; i++) {
     CRGB button_colour, cursor_colour;

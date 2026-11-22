@@ -3,24 +3,24 @@
 static QueueHandle_t track_queue;  // set equal to null?
 
 void track_queue_init() {
-  track_queue = xQueueCreate(TRACK_QUEUE_SIZE, sizeof(Track));
+  track_queue = xQueueCreate(1, sizeof(Track) * NUM_TRACKS);
   if (track_queue == NULL) {
   }
   // NEED NULL ERROR CHECKING
 }
 
-bool track_queue_overwrite(Track *track) {
+bool track_queue_overwrite(Track *tracks) {
   if (track_queue == NULL) {
     return false;
   }
 
-  return xQueueOverwrite(track_queue, track) == pdTRUE;
+  return xQueueOverwrite(track_queue, tracks) == pdTRUE;
 }
 
-bool track_queue_peek(Track *track) {
+bool track_queue_peek(Track *tracks) {
   if (track_queue == NULL) {
     return false;
   }
 
-  return xQueuePeek(track_queue, track) == pdTRUE;
+  return xQueuePeek(track_queue, tracks, 0) == pdTRUE;
 }
