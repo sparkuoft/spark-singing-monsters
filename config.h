@@ -23,6 +23,7 @@
 #define PIN_ENCODER_B 18
 #define PIN_ENCODER_BUTTON 17
 #define PIN_BUTTON_PERCUSSION 14
+#define PIN_BUTTON_RESET 15
 // etc.
 
 // ----- Enums ------
