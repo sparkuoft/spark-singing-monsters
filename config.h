@@ -23,8 +23,12 @@
 #define PIN_ENCODER_B 18
 #define PIN_ENCODER_BUTTON 17
 #define PIN_BUTTON_PERCUSSION 14
+<<<<<<< HEAD
 #define PIN_OLED_SDA 26
 #define PIN_OLED_SCL 27
+=======
+#define PIN_BUTTON_RESET 15
+>>>>>>> main
 // etc.
 
 // ----- Enums ------
