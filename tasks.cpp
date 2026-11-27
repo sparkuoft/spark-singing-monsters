@@ -2,6 +2,7 @@
 #include "config.h"
 #include "controller.h"
 #include "inputs.h"
+#include "oled.h"
 // Include the other random files for subteam tasks
 
 typedef struct {
@@ -18,6 +19,7 @@ typedef struct {
 static const Task tasks[] = {
   {"controller", controller_init, controller_loop, 10, 4096, 2, 1},
   {"inputs", inputs_init, inputs_loop, 5, 4096, 3, 1}
+  {"oled", oled_init, oled_loop, 20, 4096, 4, 1}
   // Add other subteam tasks here;
 };
 

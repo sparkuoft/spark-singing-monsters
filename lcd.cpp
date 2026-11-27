@@ -1,9 +1,0 @@
-#include "lcd.h"
-
-void lcd_init() {
-
-}
-
-void lcd_loop() {
-
-}
